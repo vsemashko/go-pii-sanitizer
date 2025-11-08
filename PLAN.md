@@ -6,6 +6,35 @@ This document outlines a **lean, focused implementation** for a production-ready
 
 **Philosophy**: Start with an MVP that solves 80% of use cases, then iterate based on real-world feedback.
 
+## Requirements & Constraints
+
+Based on user clarification, the implementation focuses on:
+
+### **Primary PII Types** (Priority Order)
+1. **Legal names** - Full names in user/customer contexts
+2. **Transaction descriptions** - Free-form text that may contain PII
+3. **Bank account numbers** - Region-specific formats (SG/MY/AE/TH/HK)
+4. **User emails** - Standard email addresses
+5. **User addresses** - Physical addresses, postal codes
+
+### **Use Cases**
+- **Logging Mode**: Structured logs (zap/slog) - Full redaction preferred, 5% false positives acceptable
+- **UI/API Mode**: Data displayed to users - Full redaction preferred, lower false positives needed
+
+### **Operational Constraints**
+- **Volume**: < 100 requests/min (~1.67/sec) - Performance is NOT a bottleneck
+- **False Positive Tolerance**:
+  - Logs: 5% acceptable
+  - UI: Prefer < 2% (stricter patterns or explicit lists)
+
+### **Key Simplifications**
+
+Given the low volume:
+1. **No need for separate "modes"** - Same engine, different configuration instances
+2. **Reflection is acceptable** - 2.5x overhead is negligible at 1.67 req/sec
+3. **No need for Presidio** - Pattern matching + explicit field lists will suffice
+4. **Simple approach**: Two sanitizer instances (one permissive for logs, one strict for UI)
+
 ## Research Findings
 
 ### Go Logging Ecosystem
@@ -108,9 +137,10 @@ The Go logging landscape is dominated by three libraries:
 
 ```go
 type SingaporePatterns struct {
-    NRIC  string // National Registration Identity Card
-    FIN   string // Foreign Identification Number
-    Phone string // +65 format
+    NRIC        string // National Registration Identity Card
+    FIN         string // Foreign Identification Number
+    Phone       string // +65 format
+    BankAccount string // 7-11 digits
 }
 
 var SG = SingaporePatterns{
@@ -122,12 +152,17 @@ var SG = SingaporePatterns{
 
     // Phone: +65 [689]XXXXXXX (8 digits total)
     Phone: `(?:\+65|65)?[689]\d{7}`,
+
+    // Bank Account: 7-11 digits (excluding bank/branch codes)
+    // Full format: BBBB-BBB-AAAAAAAAAA (bank code-branch-account)
+    BankAccount: `\b\d{4}-\d{3}-\d{7,11}\b|\b\d{7,11}\b`,
 }
 
 // Field name patterns
 var SGFieldNames = []string{
     "nric", "ic", "identityCard", "identity_card",
     "fin", "foreignId", "foreign_id",
+    "accountNumber", "account_number", "bankAccount", "bank_account",
 }
 ```
 
@@ -135,8 +170,9 @@ var SGFieldNames = []string{
 
 ```go
 type MalaysiaPatterns struct {
-    MyKad string // Malaysian Identity Card
-    Phone string
+    MyKad       string // Malaysian Identity Card
+    Phone       string
+    BankAccount string // 7-16 digits depending on bank
 }
 
 var MY = MalaysiaPatterns{
@@ -147,11 +183,16 @@ var MY = MalaysiaPatterns{
     // Phone: +60 / 60 / 0 + prefix + number
     // 01X-XXX-XXXX or 01X-XXXXXXXX (depending on prefix)
     Phone: `(?:\+?60|0)1[0-46-9]\d{7,8}`,
+
+    // Bank Account: 7-16 digits (varies by bank)
+    // Maybank/Affin: 12, Public Bank: 10, RHB: 14, etc.
+    BankAccount: `\b\d{7,16}\b`,
 }
 
 var MYFieldNames = []string{
     "mykad", "ic", "icNumber", "myKadNumber",
     "identityCard", "identity_card", "malaysianId",
+    "accountNumber", "account_number", "bankAccount", "bank_account",
 }
 ```
 
@@ -159,8 +200,9 @@ var MYFieldNames = []string{
 
 ```go
 type UAEPatterns struct {
-    EmiratesID string
-    Phone      string
+    EmiratesID  string
+    Phone       string
+    BankAccount string // IBAN format
 }
 
 var AE = UAEPatterns{
@@ -170,11 +212,16 @@ var AE = UAEPatterns{
 
     // Phone: +971 or 00971 or 0 + area/mobile code + 7 digits
     Phone: `(?:\+971|00971|0)(?:2|3|4|6|7|9|50|51|52|54|55|56|58)\d{7}`,
+
+    // IBAN: AE + 2 check digits + 19 digits (23 chars total)
+    // Format: AE07 0331 2345 6789 0123 456
+    BankAccount: `\bAE\d{2}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{3}\b`,
 }
 
 var AEFieldNames = []string{
     "emiratesId", "emirates_id", "eid", "uaeId",
     "identityCard", "identity_card", "nationalId",
+    "iban", "accountNumber", "account_number", "bankAccount", "bank_account",
 }
 ```
 
@@ -182,8 +229,9 @@ var AEFieldNames = []string{
 
 ```go
 type ThailandPatterns struct {
-    NationalID string
-    Phone      string
+    NationalID  string
+    Phone       string
+    BankAccount string // Usually 10 digits
 }
 
 var TH = ThailandPatterns{
@@ -192,11 +240,16 @@ var TH = ThailandPatterns{
 
     // Phone: +66 followed by 8-9 digits (mobile: 6/8/9 prefix)
     Phone: `(?:\+66|66|0)[689]\d{8}`,
+
+    // Bank Account: Usually 10 digits (format: 012-3-45678-9)
+    // Format varies by bank, but 10 digits is standard
+    BankAccount: `\b\d{3}-?\d-?\d{5}-?\d\b|\b\d{10,12}\b`,
 }
 
 var THFieldNames = []string{
     "thaiId", "thai_id", "nationalId", "national_id",
     "idCard", "id_card", "citizenId",
+    "accountNumber", "account_number", "bankAccount", "bank_account",
 }
 ```
 
@@ -204,8 +257,9 @@ var THFieldNames = []string{
 
 ```go
 type HongKongPatterns struct {
-    HKID  string
-    Phone string
+    HKID        string
+    Phone       string
+    BankAccount string // 9-12 digits (branch code + account)
 }
 
 var HK = HongKongPatterns{
@@ -214,11 +268,16 @@ var HK = HongKongPatterns{
 
     // Phone: +852 followed by 8 digits (mobile: 5/6/9 prefix)
     Phone: `(?:\+852|852)?[5-9]\d{7}`,
+
+    // Bank Account: 3-digit branch code + account number (total 9-12 digits)
+    // Format: BBB-AAAAAA or BBBAAAAAA
+    BankAccount: `\b\d{3}-?\d{6,9}\b|\b\d{9,12}\b`,
 }
 
 var HKFieldNames = []string{
     "hkid", "identityCard", "identity_card",
     "hongkongId", "hongkong_id",
+    "accountNumber", "account_number", "bankAccount", "bank_account",
 }
 ```
 
@@ -247,18 +306,48 @@ var Common = CommonPatterns{
     IPv6: `(?i)\b(?:[0-9a-f]{1,4}:){7}[0-9a-f]{1,4}\b`,
 }
 
-// Common PII field names
+// Common PII field names (PRIORITY ORDER based on user requirements)
 var CommonFieldNames = map[string][]string{
+    // PRIORITY 1: Legal names - highest priority
+    "name": {
+        "fullName", "full_name", "legalName", "legal_name",
+        "firstName", "first_name", "lastName", "last_name",
+        "surname", "givenName", "given_name", "customerName", "customer_name",
+        "userName", "user_name", "displayName", "display_name",
+    },
+
+    // PRIORITY 2: Transaction descriptions - often contains PII
+    "transaction": {
+        "description", "transactionDescription", "transaction_description",
+        "memo", "narrative", "reference", "remarks", "notes",
+        "paymentReference", "payment_reference", "transferDetails",
+    },
+
+    // PRIORITY 3: Bank account numbers (regional patterns above)
+    "bankAccount": {
+        "accountNumber", "account_number", "bankAccount", "bank_account",
+        "iban", "accountNo", "account_no", "beneficiaryAccount",
+    },
+
+    // PRIORITY 4: Email addresses
     "email": {
         "email", "e_mail", "emailAddress", "email_address", "mail",
+        "userEmail", "user_email", "contactEmail", "contact_email",
     },
+
+    // PRIORITY 5: Physical addresses
+    "address": {
+        "address", "street", "streetAddress", "street_address",
+        "homeAddress", "home_address", "billingAddress", "billing_address",
+        "shippingAddress", "shipping_address", "mailingAddress", "mailing_address",
+        "postalCode", "postal_code", "postCode", "post_code", "zipCode", "zip_code",
+        "city", "state", "province", "country",
+    },
+
+    // Other common PII
     "phone": {
         "phone", "phoneNumber", "phone_number", "mobile", "mobileNumber",
-        "telephone", "tel", "contact", "contactNumber",
-    },
-    "address": {
-        "address", "street", "streetAddress", "homeAddress",
-        "mailingAddress", "postalCode", "postal_code", "postCode",
+        "telephone", "tel", "contact", "contactNumber", "contact_number",
     },
     "passport": {
         "passport", "passportNumber", "passport_number", "passportNo",
@@ -267,26 +356,20 @@ var CommonFieldNames = map[string][]string{
         "dateOfBirth", "date_of_birth", "dob", "birthDate", "birth_date",
         "birthday",
     },
-    "name": {
-        // Context-sensitive: only redact in user/customer contexts
-        "fullName", "full_name", "legalName", "legal_name",
-        "firstName", "first_name", "lastName", "last_name",
-        "surname", "givenName", "given_name",
-    },
     "creditCard": {
         "creditCard", "credit_card", "cardNumber", "card_number",
         "ccNumber", "cc_number", "paymentCard", "payment_card",
     },
 }
 
-// Secrets (always redact)
+// Secrets (always redact) - highest priority
 var SecretFieldNames = []string{
     "password", "passwd", "pwd", "secret",
     "token", "accessToken", "access_token", "refreshToken", "refresh_token",
     "apiKey", "api_key", "apiSecret", "api_secret",
     "privateKey", "private_key", "secretKey", "secret_key",
     "credential", "credentials", "auth", "authorization",
-    "bearer", "sessionId", "session_id",
+    "bearer", "sessionId", "session_id", "otp", "pin",
 }
 ```
 
@@ -381,6 +464,64 @@ func (c *Config) WithRegions(regions ...Region) *Config {
     return c
 }
 ```
+
+### Recommended Usage: Logs vs UI
+
+Given the requirements (5% FP tolerance for logs, <2% for UI), use **two sanitizer instances**:
+
+```go
+package main
+
+import "github.com/yourusername/go-pii-sanitizer/sanitizer"
+
+var (
+    // Permissive sanitizer for logs - catches more, allows some false positives
+    logSanitizer = sanitizer.New(
+        sanitizer.NewDefaultConfig().
+            WithRedact("description", "memo", "reference", "remarks"). // Transaction fields
+            WithPreserve("orderId", "productId", "transactionId"),     // Business IDs
+    )
+
+    // Strict sanitizer for UI/API - uses explicit lists to minimize false positives
+    uiSanitizer = sanitizer.New(
+        sanitizer.NewDefaultConfig().
+            // Explicitly list fields to redact (no pattern matching for unknowns)
+            WithRedact(
+                // Names
+                "fullName", "firstName", "lastName", "legalName", "customerName",
+                // Transaction descriptions
+                "description", "transactionDescription", "memo", "narrative",
+                // Bank accounts
+                "accountNumber", "bankAccount", "iban",
+                // Emails
+                "email", "emailAddress", "userEmail",
+                // Addresses
+                "address", "street", "postalCode", "city",
+            ).
+            // Preserve known safe fields
+            WithPreserve(
+                "orderId", "transactionId", "productId", "merchantId",
+                "currency", "amount", "status", "type", "category",
+            ),
+    )
+)
+
+// Use in logs
+func logUserAction(user User) {
+    slog.Info("user checkout", "user", logSanitizer.Wrap(user))
+}
+
+// Use in API responses
+func getUserProfile(w http.ResponseWriter, r *http.Request) {
+    user := getUserFromDB()
+    sanitized := uiSanitizer.SanitizeMap(user)
+    json.NewEncoder(w).Encode(sanitized)
+}
+```
+
+**Key Differences**:
+- **Logs**: Pattern-based detection + explicit redact/preserve lists → More coverage, some false positives OK
+- **UI**: Primarily explicit lists → Lower false positives, but requires knowing field names upfront
 
 ### Core Sanitizer
 
@@ -1111,10 +1252,17 @@ This plan focuses on delivering a **lean, production-ready MVP** in 3 weeks:
 2. **Week 2**: Seamless integration with slog, zap, and zerolog
 3. **Week 3**: Testing, benchmarking, documentation
 
-**Key differentiators**:
-- **Regional focus**: First Go PII library targeting SG/MY/AE/TH/HK
-- **Zero/minimal overhead**: Leverages native logger interfaces
-- **Simple yet powerful**: Sensible defaults, explicit overrides
-- **Production-ready**: Performance tested, documented, supported
+**Tailored to Your Requirements**:
+- **Primary PII focus**: Legal names, transaction descriptions, bank accounts, emails, addresses
+- **Regional patterns**: SG (NRIC), MY (MyKad), AE (Emirates ID/IBAN), TH (National ID), HK (HKID) + bank account formats
+- **Volume-appropriate**: ~1.67 req/sec means performance is not critical, prioritizes correctness
+- **Dual sanitizers**: One permissive for logs (5% FP OK), one strict for UI (<2% FP)
+- **Full redaction preferred**: Simplifies implementation, no partial masking complexity upfront
 
-**Post-MVP**: Iterate based on real-world usage. Add complexity (context rules, Presidio, struct tags) only when data shows it's needed.
+**Key Differentiators**:
+- **Regional focus**: First Go PII library targeting SG/MY/AE/TH/HK markets
+- **Zero/minimal overhead**: Leverages native logger interfaces (slog, zap, zerolog)
+- **Simple yet powerful**: Sensible defaults, explicit overrides, no over-engineering
+- **Production-ready**: Pattern tested, documented, battle-tested approach
+
+**Post-MVP**: Iterate based on real-world usage. Add complexity (context rules, Presidio, struct tags) only when data shows it's needed. Given low volume and full redaction preference, pattern matching + explicit field lists will likely be sufficient indefinitely.

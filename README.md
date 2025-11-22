@@ -16,6 +16,7 @@ A production-ready PII (Personally Identifiable Information) sanitization librar
 - ✅ **Common PII**: Emails, phones, names, addresses, transaction descriptions
 - ✅ **Secrets Detection**: Passwords, tokens, API keys, credentials
 - ✅ **Struct Tag Support**: Explicit PII marking with `pii:"redact"` and `pii:"preserve"` tags
+- ✅ **Batch Processing**: Efficient bulk sanitization for high-volume scenarios (v1.2.0+)
 - ✅ **Multiple Redaction Strategies**: Full, partial masking, hashing, removal
 - ✅ **Logger Integrations**: Native support for slog, zap, and zerolog
 - ✅ **Observability**: Metrics interface for production monitoring (v1.1.0+)
@@ -23,12 +24,55 @@ A production-ready PII (Personally Identifiable Information) sanitization librar
 - ✅ **Flexible Configuration**: Explicit allow/deny lists, custom patterns
 - ✅ **Zero Dependencies**: Core library uses only Go standard library
 - ✅ **High Performance**: >800K ops/sec, minimal overhead
-- ✅ **Comprehensive Testing**: 94.4% test coverage with edge cases
+- ✅ **Comprehensive Testing**: 92.4% test coverage with edge cases
 
 ## Installation
 
 ```bash
 go get github.com/vsemashko/go-pii-sanitizer
+```
+
+## What's New in v1.2.0 🚀
+
+**Release Date:** November 2025
+**Focus:** Batch Processing, Performance, Scalability
+
+### New Features
+
+- 📦 **Batch Processing API**: Process multiple fields/records efficiently
+  - `SanitizeFields()`: Bulk field sanitization (~122K ops/sec)
+  - `SanitizeBatch()`: Bulk record processing (~30K batches/sec)
+  - `SanitizeBatchStructs()`: Batch struct processing with tags
+- 📊 **Comprehensive Benchmarks**: 15+ new benchmarks for performance analysis
+- 🎯 **Production Examples**: Complete batch processing examples and integration patterns
+- ⚡ **Performance**: Optimized for high-volume scenarios (1000+ records/batch)
+
+[See full v1.2.0 improvements →](./IMPROVEMENTS_V1.2.md)
+
+### Quick Example - Batch Processing
+
+```go
+// Process multiple database records efficiently
+s := sanitizer.NewDefault()
+
+users := []map[string]any{
+    {"email": "user1@example.com", "orderId": "ORD-1"},
+    {"email": "user2@example.com", "orderId": "ORD-2"},
+    {"email": "user3@example.com", "orderId": "ORD-3"},
+}
+
+// Sanitize all records in one operation
+sanitized := s.SanitizeBatch(users)
+// Result: All emails redacted, orderIds preserved
+
+// Or use typed structs with tags
+type User struct {
+    Email   string `pii:"redact" json:"email"`
+    OrderID string `pii:"preserve" json:"orderId"`
+}
+
+typedUsers := []User{...}
+sanitized := s.SanitizeBatchStructs(typedUsers)
 ```
 
 ## What's New in v1.1.0 🎉

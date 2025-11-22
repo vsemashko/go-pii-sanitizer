@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-01 (Planned)
+
+### Added
+- **Thailand ID checksum validation**: National IDs now validate using mod-11 algorithm (~10% FP reduction)
+- **Hash salt configuration**: `WithHashSalt()` method to prevent rainbow table attacks on hashed PII
+- **Error returns**: New `SanitizeStructWithError()` method for explicit error handling
+- **Metrics callbacks**: `OnRedact` callback with `RedactionEvent` for monitoring and observability
+- **Unicode email support**: Email pattern now supports internationalized domain names (IDN)
+
+### Changed
+- Test data updated to use valid Thai ID checksums (1-2345-67890-12-1)
+- Email pattern upgraded to support Unicode characters (\p{L}, \p{N})
+
+### Security
+- Hash strategy now supports salt configuration to prevent rainbow table attacks
+
+---
+
 ## [1.0.0] - 2024-11-22
 
 ### 🎉 Major Release - Production Ready

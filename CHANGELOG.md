@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-04 (In Development)
+
+### Added
+- **Regional expansion**: 4 new regions supported
+  - 🇮🇩 **Indonesia**: NIK (16 digits) with date validation
+  - 🇵🇭 **Philippines**: PhilSys ID (16 digits with dashes)
+  - 🇻🇳 **Vietnam**: CCCD/CMND (9 or 12 digits)
+  - 🇰🇷 **South Korea**: RRN (13 digits) with checksum validation
+- Total regions: 9 (SG, MY, AE, TH, HK, ID, PH, VN, KR)
+
+### Changed
+- Default config now supports all 9 regions
+- Pattern matching expanded for broader APAC coverage
+
+---
+
 ## [1.1.0] - 2026-01 (Planned)
 
 ### Added

@@ -38,8 +38,11 @@ func (s *Sanitizer) partialMask(value string) string {
 }
 
 // hashValue creates a SHA256 hash of the value
+// If a salt is configured, it is prepended to the value before hashing
 func (s *Sanitizer) hashValue(value string) string {
-	h := sha256.Sum256([]byte(value))
+	// Prepend salt if configured
+	input := s.config.HashSalt + value
+	h := sha256.Sum256([]byte(input))
 	// Return first 16 characters of hex for brevity
 	return "sha256:" + hex.EncodeToString(h[:8])
 }

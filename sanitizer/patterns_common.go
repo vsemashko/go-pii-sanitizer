@@ -78,8 +78,10 @@ func getCommonContentPatterns() []ContentPattern {
 	return []ContentPattern{
 		{
 			Name: "email",
-			// RFC 5322 simplified
-			Pattern: regexp.MustCompile(`\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b`),
+			// RFC 5322 simplified with Unicode support (IDN - Internationalized Domain Names)
+			// Supports emails like: user@example.com, 用户@例え.jp, пользователь@пример.рф
+			// \p{L} matches any Unicode letter, \p{N} matches any Unicode number
+			Pattern: regexp.MustCompile(`\b[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}\b`),
 		},
 		{
 			Name:    "credit_card",

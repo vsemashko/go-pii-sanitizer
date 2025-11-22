@@ -3,6 +3,7 @@ package sanitizer
 import (
 	"encoding/json"
 	"strings"
+	"time"
 )
 
 // Sanitizer is the main PII sanitization engine.
@@ -172,21 +173,36 @@ func (s *Sanitizer) SanitizeField(fieldName, value string) string {
 
 	// Always redact if in redact list
 	if s.explicitRedact[fieldNameLower] {
+		s.fireRedactCallback(fieldName, "explicit_redact")
 		return s.redact(value)
 	}
 
 	// 2. Check field name patterns
-	if s.fieldMatcher.matches(fieldName) {
+	if patternName := s.fieldMatcher.matchType(fieldName); patternName != "" {
+		s.fireRedactCallback(fieldName, patternName)
 		return s.redact(value)
 	}
 
 	// 3. Check content patterns (only for string values)
-	if s.contentMatcher.matches(value) {
+	if patternName := s.contentMatcher.matchType(value); patternName != "" {
+		s.fireRedactCallback(fieldName, patternName)
 		return s.redact(value)
 	}
 
 	// No PII detected
 	return value
+}
+
+// fireRedactCallback invokes the OnRedact callback if configured
+func (s *Sanitizer) fireRedactCallback(fieldName, patternName string) {
+	if s.config.OnRedact != nil {
+		s.config.OnRedact(RedactionEvent{
+			FieldName:   fieldName,
+			PatternName: patternName,
+			Timestamp:   time.Now(),
+			Strategy:    s.config.Strategy,
+		})
+	}
 }
 
 // SanitizeMap sanitizes a map (common for JSON-like structures)
@@ -268,18 +284,35 @@ func (s *Sanitizer) SanitizeJSON(data []byte) ([]byte, error) {
 
 // SanitizeStruct sanitizes a struct by converting it to a map
 // This uses JSON marshaling/unmarshaling which has overhead but works with any struct
+//
+// Note: This method silently returns an empty map on errors for backwards compatibility.
+// Use SanitizeStructWithError for explicit error handling.
 func (s *Sanitizer) SanitizeStruct(v any) map[string]any {
+	result, _ := s.SanitizeStructWithError(v)
+	return result
+}
+
+// SanitizeStructWithError sanitizes a struct and returns any errors encountered
+// This is the recommended method for production use as it provides explicit error handling
+//
+// Example:
+//
+//	sanitized, err := s.SanitizeStructWithError(user)
+//	if err != nil {
+//		log.Printf("failed to sanitize: %v", err)
+//		return err
+//	}
+func (s *Sanitizer) SanitizeStructWithError(v any) (map[string]any, error) {
 	// Convert struct to JSON, then to map
 	data, err := json.Marshal(v)
 	if err != nil {
-		// If marshaling fails, return empty map
-		return make(map[string]any)
+		return nil, err
 	}
 
 	var m map[string]any
 	if err := json.Unmarshal(data, &m); err != nil {
-		return make(map[string]any)
+		return nil, err
 	}
 
-	return s.SanitizeMap(m)
+	return s.SanitizeMap(m), nil
 }

@@ -324,7 +324,7 @@ func TestNewForRegion_MultipleRegions(t *testing.T) {
 		{"nric", "S1234567D", true},               // Singapore
 		{"ic", "901230-14-5678", true},            // Malaysia
 		{"eid", "784-2020-1234567-1", true},       // UAE
-		{"nationalId", "1-2345-67890-12-3", true}, // Thailand
+		{"nationalId", "1-2345-67890-12-1", true}, // Thailand - valid checksum
 		{"hkid", "A123456(7)", true},              // Hong Kong
 	}
 

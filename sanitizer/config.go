@@ -3,6 +3,8 @@
 // UAE, Thailand, and Hong Kong, with seamless integration for popular logging libraries.
 package sanitizer
 
+import "time"
+
 // Region represents a geographic region for PII pattern matching.
 // Each region has specific PII patterns (national IDs, phone numbers, bank accounts).
 //
@@ -53,6 +55,15 @@ const (
 	StrategyRemove RedactionStrategy = "remove"
 )
 
+// RedactionEvent contains information about a redaction that occurred
+// This is passed to the OnRedact callback for monitoring and metrics
+type RedactionEvent struct {
+	FieldName   string            // The field name that was redacted
+	PatternName string            // The pattern that matched (e.g., "credit_card", "nric")
+	Timestamp   time.Time         // When the redaction occurred
+	Strategy    RedactionStrategy // The redaction strategy used
+}
+
 // Config holds the configuration for the sanitizer
 type Config struct {
 	// Region selection (default: all enabled)
@@ -73,6 +84,12 @@ type Config struct {
 	// Performance tuning
 	MaxDepth int // Max nesting depth for traversal
 
+	// Hash strategy configuration
+	HashSalt string // Optional salt for hash strategy (improves security)
+
+	// Monitoring and metrics
+	OnRedact func(RedactionEvent) // Optional callback when PII is redacted
+
 	// Custom patterns (advanced)
 	CustomFieldPatterns   map[string][]string
 	CustomContentPatterns []ContentPattern
@@ -89,6 +106,7 @@ func NewDefaultConfig() *Config {
 		PartialKeepLeft:       0,
 		PartialKeepRight:      4,
 		MaxDepth:              10,
+		HashSalt:              "", // No salt by default
 		CustomFieldPatterns:   make(map[string][]string),
 		CustomContentPatterns: []ContentPattern{},
 	}
@@ -123,6 +141,29 @@ func (c *Config) WithPartialMasking(maskChar rune, keepLeft, keepRight int) *Con
 	c.PartialMaskChar = maskChar
 	c.PartialKeepLeft = keepLeft
 	c.PartialKeepRight = keepRight
+	return c
+}
+
+// WithHashSalt sets the salt for hash strategy
+// The salt is prepended to values before hashing to prevent rainbow table attacks
+func (c *Config) WithHashSalt(salt string) *Config {
+	c.HashSalt = salt
+	return c
+}
+
+// WithOnRedact sets a callback to be invoked whenever PII is redacted
+// This is useful for metrics, monitoring, and auditing
+//
+// Example:
+//
+//	config.WithOnRedact(func(event RedactionEvent) {
+//		metrics.Increment("pii.redacted", map[string]string{
+//			"pattern": event.PatternName,
+//			"strategy": string(event.Strategy),
+//		})
+//	})
+func (c *Config) WithOnRedact(callback func(RedactionEvent)) *Config {
+	c.OnRedact = callback
 	return c
 }
 

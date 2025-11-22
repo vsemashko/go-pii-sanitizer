@@ -144,7 +144,7 @@ jobs:
       run: make bench > benchmark_results.txt
 
     - name: Upload benchmark results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: benchmark-results
         path: benchmark_results.txt
@@ -164,7 +164,7 @@ jobs:
         args: '-fmt json -out gosec-report.json ./...'
 
     - name: Upload Gosec report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: gosec-report

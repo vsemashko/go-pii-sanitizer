@@ -273,7 +273,7 @@ func TestCompilePatterns_AllRegions(t *testing.T) {
 		{"nric", "S1234567D", true},
 		{"mykad", "901230-14-5678", true},
 		{"eid", "784-2020-1234567-1", true},
-		{"nationalId", "1-2345-67890-12-3", true},
+		{"nationalId", "1-2345-67890-12-1", true},
 		{"hkid", "A123456(7)", true},
 	}
 

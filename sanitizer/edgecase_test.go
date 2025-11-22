@@ -221,7 +221,7 @@ func TestAllRegions(t *testing.T) {
 		{"Singapore NRIC", "S1234567D"},
 		{"Malaysia MyKad", "901230-14-5678"},
 		{"UAE Emirates ID", "784-2020-1234567-1"},
-		{"Thailand ID", "1-2345-67890-12-3"},
+		{"Thailand ID", "1-2345-67890-12-1"},
 		{"Hong Kong HKID", "A123456(7)"},
 	}
 

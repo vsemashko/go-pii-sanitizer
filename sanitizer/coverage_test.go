@@ -311,7 +311,7 @@ func TestRegionSpecificPatterns(t *testing.T) {
 		{
 			name:    "Thailand only - National ID match",
 			regions: []Region{Thailand},
-			content: "1-2345-67890-12-3",
+			content: "1-2345-67890-12-1",
 			match:   true,
 		},
 		{

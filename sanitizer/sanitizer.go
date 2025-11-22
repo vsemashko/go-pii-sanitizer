@@ -2,7 +2,9 @@ package sanitizer
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
+	"time"
 )
 
 // Sanitizer is the main PII sanitization engine.
@@ -151,15 +153,30 @@ func (s *Sanitizer) compilePatterns() {
 //
 // Empty values are never redacted.
 //
+// v1.1.0+: Supports field length validation and metrics collection.
+//
 // Example:
 //
 //	s := NewDefault()
 //	sanitized := s.SanitizeField("email", "user@example.com") // returns "[REDACTED]"
 //	safe := s.SanitizeField("orderId", "ORD-123")              // returns "ORD-123"
 func (s *Sanitizer) SanitizeField(fieldName, value string) string {
+	// Track start time for metrics
+	var startTime time.Time
+	if s.config.Metrics != nil {
+		startTime = time.Now()
+	}
+
 	// Don't redact empty values
 	if value == "" {
 		return value
+	}
+
+	// v1.1.0+: Apply field length validation if configured
+	originalLength := len(value)
+	if s.config.MaxFieldLength > 0 && len(value) > s.config.MaxFieldLength {
+		// Truncate oversized values before pattern matching
+		value = value[:s.config.MaxFieldLength]
 	}
 
 	// 1. Check explicit lists first (highest priority)
@@ -167,26 +184,54 @@ func (s *Sanitizer) SanitizeField(fieldName, value string) string {
 
 	// Never redact if in safe list
 	if s.explicitSafe[fieldNameLower] {
+		s.recordMetrics(fieldName, "", false, originalLength, startTime)
 		return value
 	}
 
 	// Always redact if in redact list
 	if s.explicitRedact[fieldNameLower] {
+		s.recordMetrics(fieldName, "explicit_redact", true, originalLength, startTime)
 		return s.redact(value)
 	}
 
 	// 2. Check field name patterns
-	if s.fieldMatcher.matches(fieldName) {
+	if piiType := s.fieldMatcher.matchType(fieldName); piiType != "" {
+		s.recordMetrics(fieldName, piiType, true, originalLength, startTime)
 		return s.redact(value)
 	}
 
-	// 3. Check content patterns (only for string values)
-	if s.contentMatcher.matches(value) {
+	// 3. Check content patterns (with length limit if configured)
+	valueToCheck := value
+	if s.config.MaxContentLength > 0 && len(value) > s.config.MaxContentLength {
+		// Only scan up to MaxContentLength for performance/safety
+		valueToCheck = value[:s.config.MaxContentLength]
+	}
+
+	if piiType := s.contentMatcher.matchType(valueToCheck); piiType != "" {
+		s.recordMetrics(fieldName, piiType, true, originalLength, startTime)
 		return s.redact(value)
 	}
 
 	// No PII detected
+	s.recordMetrics(fieldName, "", false, originalLength, startTime)
 	return value
+}
+
+// recordMetrics records sanitization metrics if metrics collector is configured
+func (s *Sanitizer) recordMetrics(fieldName, piiType string, redacted bool, valueLength int, startTime time.Time) {
+	if s.config.Metrics == nil {
+		return
+	}
+
+	duration := time.Since(startTime)
+	s.config.Metrics.RecordSanitization(MetricsContext{
+		FieldName:   fieldName,
+		PIIType:     piiType,
+		Redacted:    redacted,
+		Strategy:    s.config.Strategy,
+		Duration:    duration,
+		ValueLength: valueLength,
+	})
 }
 
 // SanitizeMap sanitizes a map (common for JSON-like structures)
@@ -256,14 +301,21 @@ func (s *Sanitizer) sanitizeSlice(slice []any, depth int) []any {
 }
 
 // SanitizeJSON sanitizes JSON data
+// v1.1.0+: Improved error context wrapping
 func (s *Sanitizer) SanitizeJSON(data []byte) ([]byte, error) {
 	var m map[string]any
 	if err := json.Unmarshal(data, &m); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sanitizer: failed to unmarshal JSON: %w", err)
 	}
 
 	sanitized := s.SanitizeMap(m)
-	return json.Marshal(sanitized)
+
+	result, err := json.Marshal(sanitized)
+	if err != nil {
+		return nil, fmt.Errorf("sanitizer: failed to marshal sanitized JSON: %w", err)
+	}
+
+	return result, nil
 }
 
 // SanitizeStruct sanitizes a struct by converting it to a map

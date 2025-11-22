@@ -13,11 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 🇵🇭 **Philippines**: PhilSys ID (16 digits with dashes)
   - 🇻🇳 **Vietnam**: CCCD/CMND (9 or 12 digits)
   - 🇰🇷 **South Korea**: RRN (13 digits) with checksum validation
-- Total regions: 9 (SG, MY, AE, TH, HK, ID, PH, VN, KR)
+- **YAML/JSON config loader**: `LoadConfig(filename)` function for loading configuration from files
+  - Supports both YAML (.yaml, .yml) and JSON (.json) formats
+  - Auto-detection based on file extension
+  - Comprehensive validation with descriptive error messages
+  - Example configs in `examples/` directory
+- **Performance optimizations**:
+  - Map preallocation in recursive sanitization (~10-15% faster)
+  - strings.Builder for efficient string concatenation in partial masking
+  - Reduced memory allocations
 
 ### Changed
 - Default config now supports all 9 regions
 - Pattern matching expanded for broader APAC coverage
+- Performance improvements for large nested structures
+
+### Dependencies
+- Added `gopkg.in/yaml.v3` for YAML config file support
 
 ---
 

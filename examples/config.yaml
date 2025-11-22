@@ -1,0 +1,61 @@
+# Example PII Sanitizer Configuration File (YAML)
+# This file demonstrates all available configuration options
+
+# Regions to enable for PII detection
+# Valid values: SG, MY, AE, TH, HK, ID, PH, VN, KR
+regions:
+  - SG  # Singapore
+  - MY  # Malaysia
+  - TH  # Thailand
+
+# Redaction strategy
+# Valid values: full, partial, hash, remove
+strategy: partial
+
+# Field names to always redact (highest priority)
+# These fields will be redacted regardless of content
+always_redact:
+  - internalNotes
+  - debugInfo
+  - secretData
+
+# Field names to never redact (allowlist)
+# These fields will never be redacted, even if content matches PII patterns
+never_redact:
+  - orderId
+  - transactionId
+  - merchantId
+
+# Partial masking configuration (used when strategy is "partial")
+partial_masking:
+  mask_char: "*"      # Character to use for masking
+  keep_left: 0        # Number of characters to keep visible on the left
+  keep_right: 4       # Number of characters to keep visible on the right
+
+# Salt for hash strategy (improves security by preventing rainbow table attacks)
+# Only used when strategy is "hash"
+hash_salt: "my-secret-salt-value"
+
+# Maximum depth for recursive traversal of nested structures
+# Prevents stack overflow on deeply nested data
+max_depth: 10
+
+# Custom patterns (advanced usage)
+custom_patterns:
+  # Custom field name patterns
+  fields:
+    internal_ref:
+      - internalRef
+      - internal_ref
+      - refCode
+    employee_id:
+      - employeeId
+      - staffId
+      - workerId
+
+  # Custom content patterns (regex)
+  content:
+    - name: custom_id_pattern
+      pattern: "[A-Z]{3}-\\d{6}"
+    - name: internal_code
+      pattern: "INT-[0-9]{4}-[A-Z]{2}"

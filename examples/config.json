@@ -1,0 +1,49 @@
+{
+  "regions": [
+    "SG",
+    "MY",
+    "TH"
+  ],
+  "strategy": "partial",
+  "always_redact": [
+    "internalNotes",
+    "debugInfo",
+    "secretData"
+  ],
+  "never_redact": [
+    "orderId",
+    "transactionId",
+    "merchantId"
+  ],
+  "partial_masking": {
+    "mask_char": "*",
+    "keep_left": 0,
+    "keep_right": 4
+  },
+  "hash_salt": "my-secret-salt-value",
+  "max_depth": 10,
+  "custom_patterns": {
+    "fields": {
+      "internal_ref": [
+        "internalRef",
+        "internal_ref",
+        "refCode"
+      ],
+      "employee_id": [
+        "employeeId",
+        "staffId",
+        "workerId"
+      ]
+    },
+    "content": [
+      {
+        "name": "custom_id_pattern",
+        "pattern": "[A-Z]{3}-\\d{6}"
+      },
+      {
+        "name": "internal_code",
+        "pattern": "INT-[0-9]{4}-[A-Z]{2}"
+      }
+    ]
+  }
+}

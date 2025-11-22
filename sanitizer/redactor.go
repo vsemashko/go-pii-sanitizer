@@ -24,17 +24,24 @@ func (s *Sanitizer) redact(value string) string {
 
 // partialMask partially masks a value, preserving some characters
 func (s *Sanitizer) partialMask(value string) string {
-	if len(value) <= s.config.PartialKeepLeft+s.config.PartialKeepRight {
+	totalKeep := s.config.PartialKeepLeft + s.config.PartialKeepRight
+	if len(value) <= totalKeep {
 		// Too short to mask partially, redact fully with asterisks
 		return strings.Repeat(string(s.config.PartialMaskChar), len(value))
 	}
 
-	left := value[:s.config.PartialKeepLeft]
-	right := value[len(value)-s.config.PartialKeepRight:]
-	maskedLength := len(value) - s.config.PartialKeepLeft - s.config.PartialKeepRight
-	masked := strings.Repeat(string(s.config.PartialMaskChar), maskedLength)
+	// Use strings.Builder for efficient concatenation
+	var builder strings.Builder
+	maskedLength := len(value) - totalKeep
+	builder.Grow(len(value)) // Preallocate exact capacity
 
-	return left + masked + right
+	builder.WriteString(value[:s.config.PartialKeepLeft])
+	for i := 0; i < maskedLength; i++ {
+		builder.WriteRune(s.config.PartialMaskChar)
+	}
+	builder.WriteString(value[len(value)-s.config.PartialKeepRight:])
+
+	return builder.String()
 }
 
 // hashValue creates a SHA256 hash of the value

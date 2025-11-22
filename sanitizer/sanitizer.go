@@ -216,7 +216,8 @@ func (s *Sanitizer) sanitizeMapRecursive(m map[string]any, depth int) map[string
 		return m
 	}
 
-	result := make(map[string]any)
+	// Preallocate map with expected capacity to reduce allocations
+	result := make(map[string]any, len(m))
 	for k, v := range m {
 		switch val := v.(type) {
 		case string:

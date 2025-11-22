@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/vsemashko/go-pii-sanitizer/workflows/CI/badge.svg)](https://github.com/vsemashko/go-pii-sanitizer/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/vsemashko/go-pii-sanitizer)](https://goreportcard.com/report/github.com/vsemashko/go-pii-sanitizer)
+[![codecov](https://codecov.io/gh/vsemashko/go-pii-sanitizer/branch/main/graph/badge.svg)](https://codecov.io/gh/vsemashko/go-pii-sanitizer)
 [![GoDoc](https://godoc.org/github.com/vsemashko/go-pii-sanitizer?status.svg)](https://godoc.org/github.com/vsemashko/go-pii-sanitizer/sanitizer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -19,6 +20,7 @@ A production-ready PII (Personally Identifiable Information) sanitization librar
 - ✅ **Flexible Configuration**: Explicit allow/deny lists, custom patterns
 - ✅ **Zero Dependencies**: Core library uses only Go standard library
 - ✅ **High Performance**: Minimal overhead, suitable for logging and API sanitization
+- ✅ **Comprehensive Testing**: 97% test coverage with 90+ edge case tests
 
 ## Installation
 
@@ -644,7 +646,7 @@ make all
 - Add tests for new features
 - Update documentation as needed
 - Run `make all` before submitting PR
-- Keep test coverage above 85%
+- Maintain test coverage above 95% (current: 97.0%)
 
 ## Roadmap
 

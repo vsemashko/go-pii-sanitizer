@@ -5,7 +5,11 @@ import (
 	"strings"
 )
 
-// Sanitizer is the main PII sanitization engine
+// Sanitizer is the main PII sanitization engine.
+// It uses a combination of field name matching and content pattern matching
+// to detect and redact PII in structured data.
+//
+// The sanitizer is safe for concurrent use after initialization.
 type Sanitizer struct {
 	config         *Config
 	fieldMatcher   *fieldNameMatcher
@@ -14,7 +18,18 @@ type Sanitizer struct {
 	explicitSafe   map[string]bool // Quick lookup for NeverRedact
 }
 
-// New creates a new Sanitizer with the given configuration
+// New creates a new Sanitizer with the given configuration.
+//
+// If config is nil, a default configuration will be used with all regions enabled.
+// The sanitizer is safe for concurrent use after creation.
+//
+// Example:
+//
+//	config := NewDefaultConfig().
+//		WithRegions(Singapore, Malaysia).
+//		WithStrategy(StrategyPartial).
+//		WithRedact("internalNotes", "debugInfo")
+//	s := New(config)
 func New(config *Config) *Sanitizer {
 	if config == nil {
 		config = NewDefaultConfig()
@@ -119,7 +134,21 @@ func (s *Sanitizer) compilePatterns() {
 	s.contentMatcher = newContentMatcher(contentPatterns)
 }
 
-// SanitizeField sanitizes a single field value
+// SanitizeField sanitizes a single field value based on field name and content.
+//
+// The sanitization logic follows this priority order:
+//  1. Explicit preserve list (NeverRedact) - value returned as-is
+//  2. Explicit redact list (AlwaysRedact) - value redacted
+//  3. Field name pattern matching - value redacted if field name matches PII patterns
+//  4. Content pattern matching - value redacted if content matches PII patterns
+//
+// Empty values are never redacted.
+//
+// Example:
+//
+//	s := NewDefault()
+//	sanitized := s.SanitizeField("email", "user@example.com") // returns "[REDACTED]"
+//	safe := s.SanitizeField("orderId", "ORD-123")              // returns "ORD-123"
 func (s *Sanitizer) SanitizeField(fieldName, value string) string {
 	// Don't redact empty values
 	if value == "" {

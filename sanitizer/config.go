@@ -1,24 +1,56 @@
+// Package sanitizer provides PII (Personally Identifiable Information) detection and redaction
+// for structured data in Go applications. It supports regional patterns for Singapore, Malaysia,
+// UAE, Thailand, and Hong Kong, with seamless integration for popular logging libraries.
 package sanitizer
 
-// Region represents a geographic region for PII pattern matching
+// Region represents a geographic region for PII pattern matching.
+// Each region has specific PII patterns (national IDs, phone numbers, bank accounts).
+//
+// Example:
+//
+//	config := NewDefaultConfig().WithRegions(Singapore, Malaysia)
+//	s := New(config)
 type Region string
 
 const (
+	// Singapore enables Singapore-specific patterns (NRIC, phone, bank accounts)
 	Singapore Region = "SG"
-	Malaysia  Region = "MY"
-	UAE       Region = "AE"
-	Thailand  Region = "TH"
-	HongKong  Region = "HK"
+
+	// Malaysia enables Malaysia-specific patterns (MyKad, phone, bank accounts)
+	Malaysia Region = "MY"
+
+	// UAE enables UAE-specific patterns (Emirates ID, IBAN, phone)
+	UAE Region = "AE"
+
+	// Thailand enables Thailand-specific patterns (National ID, phone, bank accounts)
+	Thailand Region = "TH"
+
+	// HongKong enables Hong Kong-specific patterns (HKID, phone)
+	HongKong Region = "HK"
 )
 
-// RedactionStrategy defines how PII should be redacted
+// RedactionStrategy defines how PII should be redacted when detected.
+//
+// Example:
+//
+//	config := NewDefaultConfig().WithStrategy(StrategyPartial)
+//	s := New(config)
 type RedactionStrategy string
 
 const (
-	StrategyFull    RedactionStrategy = "full"    // "[REDACTED]"
-	StrategyPartial RedactionStrategy = "partial" // "****1234"
-	StrategyHash    RedactionStrategy = "hash"    // "sha256:abc..."
-	StrategyRemove  RedactionStrategy = "remove"  // Remove field entirely
+	// StrategyFull replaces PII with "[REDACTED]" (default)
+	StrategyFull RedactionStrategy = "full"
+
+	// StrategyPartial masks part of the value, e.g., "****1234"
+	// Use WithPartialMasking to configure mask character and visible chars
+	StrategyPartial RedactionStrategy = "partial"
+
+	// StrategyHash replaces PII with a consistent SHA-256 hash, e.g., "sha256:abc..."
+	// Useful for log correlation while protecting actual values
+	StrategyHash RedactionStrategy = "hash"
+
+	// StrategyRemove completely removes the field from output
+	StrategyRemove RedactionStrategy = "remove"
 )
 
 // Config holds the configuration for the sanitizer

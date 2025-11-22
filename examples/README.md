@@ -7,7 +7,8 @@ This directory contains example applications demonstrating how to use the PII sa
 - **slog**: Standard library structured logging (Go 1.21+)
 - **zap**: Uber's high-performance structured logger
 - **zerolog**: Fast, low-allocation JSON logger
-- **metrics**: Observability and metrics collection (v1.1.0+) 🆕
+- **metrics**: Observability and metrics collection (v1.1.0+)
+- **batch**: Batch processing and struct tags (v1.2.0+) 🆕
 
 ## Running Examples
 

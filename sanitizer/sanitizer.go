@@ -3,6 +3,7 @@ package sanitizer
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -334,4 +335,103 @@ func (s *Sanitizer) SanitizeStruct(v any) map[string]any {
 	}
 
 	return s.SanitizeMap(m)
+}
+
+// SanitizeFields sanitizes multiple fields in bulk (v1.2.0+).
+//
+// This is more efficient than calling SanitizeField repeatedly when you have
+// many fields to sanitize, as it can batch metric collection and reduce overhead.
+//
+// Example:
+//
+//	s := NewDefault()
+//	fields := map[string]string{
+//	    "email":    "user@example.com",
+//	    "fullName": "John Doe",
+//	    "orderId":  "ORD-123",
+//	}
+//	sanitized := s.SanitizeFields(fields)
+//	// sanitized["email"] = "[REDACTED]"
+//	// sanitized["fullName"] = "[REDACTED]"
+//	// sanitized["orderId"] = "ORD-123"
+func (s *Sanitizer) SanitizeFields(fields map[string]string) map[string]string {
+	if len(fields) == 0 {
+		return fields
+	}
+
+	result := make(map[string]string, len(fields))
+	for fieldName, value := range fields {
+		result[fieldName] = s.SanitizeField(fieldName, value)
+	}
+	return result
+}
+
+// SanitizeBatch sanitizes multiple records in bulk (v1.2.0+).
+//
+// This is more efficient than calling SanitizeMap repeatedly when you have
+// many records to process, as it processes them in sequence with consistent
+// configuration and metrics collection.
+//
+// Example:
+//
+//	s := NewDefault()
+//	records := []map[string]any{
+//	    {"email": "user1@example.com", "orderId": "ORD-1"},
+//	    {"email": "user2@example.com", "orderId": "ORD-2"},
+//	}
+//	sanitized := s.SanitizeBatch(records)
+func (s *Sanitizer) SanitizeBatch(records []map[string]any) []map[string]any {
+	if len(records) == 0 {
+		return records
+	}
+
+	result := make([]map[string]any, len(records))
+	for i, record := range records {
+		result[i] = s.SanitizeMap(record)
+	}
+	return result
+}
+
+// SanitizeBatchStructs sanitizes multiple structs using struct tags (v1.2.0+).
+//
+// This is a batch version of SanitizeStructWithTags for efficiently processing
+// multiple struct instances with PII tag annotations.
+//
+// Example:
+//
+//	type User struct {
+//	    Email   string `pii:"redact" json:"email"`
+//	    OrderID string `pii:"preserve" json:"orderId"`
+//	}
+//
+//	s := NewDefault()
+//	users := []User{
+//	    {Email: "user1@example.com", OrderID: "ORD-1"},
+//	    {Email: "user2@example.com", OrderID: "ORD-2"},
+//	}
+//	sanitized := s.SanitizeBatchStructs(users)
+func (s *Sanitizer) SanitizeBatchStructs(items any) []map[string]any {
+	// Handle slice using reflection
+	val := reflect.ValueOf(items)
+
+	// Handle pointer to slice
+	if val.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return []map[string]any{}
+		}
+		val = val.Elem()
+	}
+
+	// Must be a slice or array
+	if val.Kind() != reflect.Slice && val.Kind() != reflect.Array {
+		return []map[string]any{}
+	}
+
+	result := make([]map[string]any, val.Len())
+	for i := 0; i < val.Len(); i++ {
+		item := val.Index(i).Interface()
+		result[i] = s.SanitizeStructWithTags(item)
+	}
+
+	return result
 }

@@ -3,8 +3,8 @@ module github.com/vsemashko/go-pii-sanitizer
 go 1.21
 
 require (
-	github.com/rs/zerolog v1.33.0
-	go.uber.org/zap v1.27.0
+	github.com/rs/zerolog v1.34.0
+	go.uber.org/zap v1.27.1
 )
 
 require (

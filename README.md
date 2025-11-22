@@ -259,6 +259,123 @@ func GetUserProfile(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
+## Logger Integrations
+
+The library provides native integrations for popular Go logging libraries.
+
+### slog (Standard Library)
+
+```go
+import (
+    "log/slog"
+    "github.com/vsemashko/go-pii-sanitizer/sanitizer"
+)
+
+s := sanitizer.NewDefault()
+logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+// Sanitize entire object
+userData := map[string]interface{}{
+    "email": "user@example.com",
+    "orderId": "ORD-123",
+}
+logger.Info("user action", "user", s.SlogValue(userData))
+
+// Sanitize individual field
+logger.Info("login", s.SlogString("email", "user@example.com"))
+
+// Grouped fields
+logger.Info("payment", s.SlogGroup("customer",
+    "email", "user@example.com",
+    "orderId", "ORD-123",
+))
+```
+
+**Output:**
+```json
+{"time":"2024-01-15T10:30:00Z","level":"INFO","msg":"user action","user":{"email":"[REDACTED]","orderId":"ORD-123"}}
+```
+
+### zap (Uber)
+
+```go
+import (
+    "go.uber.org/zap"
+    "github.com/vsemashko/go-pii-sanitizer/sanitizer"
+)
+
+s := sanitizer.NewDefault()
+logger, _ := zap.NewProduction()
+
+// Sanitize entire object
+userData := map[string]interface{}{
+    "email": "user@example.com",
+    "orderId": "ORD-123",
+}
+logger.Info("user action", zap.Object("user", s.ZapObject(userData)))
+
+// Sanitize individual field
+logger.Info("login", s.ZapString("email", "user@example.com"))
+
+// Multiple objects
+logger.Info("order",
+    zap.Object("customer", s.ZapObject(customer)),
+    zap.Object("order", s.ZapObject(order)),
+)
+```
+
+**Output:**
+```json
+{"level":"info","timestamp":"2024-01-15T10:30:00Z","msg":"user action","user":{"email":"[REDACTED]","orderId":"ORD-123"}}
+```
+
+### zerolog
+
+```go
+import (
+    "github.com/rs/zerolog"
+    "github.com/vsemashko/go-pii-sanitizer/sanitizer"
+)
+
+s := sanitizer.NewDefault()
+logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+
+// Sanitize entire object
+userData := map[string]interface{}{
+    "email": "user@example.com",
+    "orderId": "ORD-123",
+}
+logger.Info().Object("user", s.ZerologObject(userData)).Msg("user action")
+
+// Sanitize individual field
+key, value := s.ZerologString("email", "user@example.com")
+logger.Info().Str(key, value).Msg("login")
+
+// Multiple objects
+logger.Info().
+    Object("customer", s.ZerologObject(customer)).
+    Object("order", s.ZerologObject(order)).
+    Msg("order created")
+```
+
+**Output:**
+```json
+{"level":"info","time":1705315800,"message":"user action","user":{"email":"[REDACTED]","orderId":"ORD-123"}}
+```
+
+### Working Examples
+
+See the [`examples/`](./examples) directory for complete working examples:
+- [`examples/slog/`](./examples/slog) - slog integration examples
+- [`examples/zap/`](./examples/zap) - zap integration examples
+- [`examples/zerolog/`](./examples/zerolog) - zerolog integration examples
+
+Each example demonstrates:
+- Basic and nested data sanitization
+- Regional PII patterns
+- Custom configurations (logs vs UI)
+- Different redaction strategies
+
 ## Compliance
 
 Designed to help with data protection regulations in target regions:
@@ -279,8 +396,9 @@ Contributions welcome! Please open an issue or PR.
 
 ## Roadmap
 
-- [ ] slog, zap, zerolog logger integrations (Week 2)
-- [ ] Benchmarking suite
+- [x] Core PII sanitizer (Week 1) ✅
+- [x] slog, zap, zerolog logger integrations (Week 2) ✅
+- [x] Comprehensive test suite with benchmarks ✅
 - [ ] Context-aware detection for reduced false positives
 - [ ] Microsoft Presidio integration (optional, for ML-powered detection)
 - [ ] Struct tag support (`pii:"redact"`)

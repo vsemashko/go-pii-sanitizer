@@ -121,6 +121,11 @@ func (s *Sanitizer) compilePatterns() {
 
 // SanitizeField sanitizes a single field value
 func (s *Sanitizer) SanitizeField(fieldName, value string) string {
+	// Don't redact empty values
+	if value == "" {
+		return value
+	}
+
 	// 1. Check explicit lists first (highest priority)
 	fieldNameLower := strings.ToLower(fieldName)
 
@@ -140,7 +145,7 @@ func (s *Sanitizer) SanitizeField(fieldName, value string) string {
 	}
 
 	// 3. Check content patterns (only for string values)
-	if value != "" && s.contentMatcher.matches(value) {
+	if s.contentMatcher.matches(value) {
 		return s.redact(value)
 	}
 

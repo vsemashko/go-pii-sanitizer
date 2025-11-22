@@ -29,6 +29,18 @@ const (
 
 	// HongKong enables Hong Kong-specific patterns (HKID, phone)
 	HongKong Region = "HK"
+
+	// Indonesia enables Indonesia-specific patterns (NIK, phone)
+	Indonesia Region = "ID"
+
+	// Philippines enables Philippines-specific patterns (PhilSys ID, phone)
+	Philippines Region = "PH"
+
+	// Vietnam enables Vietnam-specific patterns (CCCD/CMND, phone)
+	Vietnam Region = "VN"
+
+	// SouthKorea enables South Korea-specific patterns (RRN, phone)
+	SouthKorea Region = "KR"
 )
 
 // RedactionStrategy defines how PII should be redacted when detected.

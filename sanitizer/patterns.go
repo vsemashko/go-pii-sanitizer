@@ -24,5 +24,9 @@ func getAllRegionalPatterns() []RegionalPatterns {
 		getUAEPatterns(),
 		getThailandPatterns(),
 		getHongKongPatterns(),
+		getIndonesiaPatterns(),
+		getPhilippinesPatterns(),
+		getVietnamPatterns(),
+		getSouthKoreaPatterns(),
 	}
 }

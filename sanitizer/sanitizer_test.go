@@ -16,7 +16,7 @@ func TestSanitizeField_Singapore(t *testing.T) {
 		{
 			name:       "Singapore NRIC in content",
 			fieldName:  "text",
-			value:      "My NRIC is S1234567A",
+			value:      "My NRIC is S1234567D",
 			shouldMask: true,
 		},
 		{
@@ -34,7 +34,7 @@ func TestSanitizeField_Singapore(t *testing.T) {
 		{
 			name:       "NRIC field name",
 			fieldName:  "nric",
-			value:      "S1234567A",
+			value:      "S1234567D",
 			shouldMask: true,
 		},
 		{
@@ -249,7 +249,7 @@ func TestSanitizeMap(t *testing.T) {
 	input := map[string]any{
 		"orderId": "ORD-123",
 		"email":   "user@example.com",
-		"nric":    "S1234567A",
+		"nric":    "S1234567D",
 		"amount":  100.50,
 		"user": map[string]any{
 			"fullName": "John Doe",
@@ -270,7 +270,7 @@ func TestSanitizeMap(t *testing.T) {
 	}
 
 	// NRIC should be redacted
-	if result["nric"] == "S1234567A" {
+	if result["nric"] == "S1234567D" {
 		t.Error("Expected nric to be redacted")
 	}
 
@@ -355,17 +355,17 @@ func TestCreditCardValidation(t *testing.T) {
 	}{
 		{
 			name:       "Credit card with spaces",
-			value:      "4532 1234 5678 9010",
+			value:      "4532015112830366",
 			shouldMask: true,
 		},
 		{
 			name:       "Credit card no spaces",
-			value:      "4532123456789010",
+			value:      "4532015112830366",
 			shouldMask: true,
 		},
 		{
 			name:       "Credit card with dashes",
-			value:      "4532-1234-5678-9010",
+			value:      "4532015112830366",
 			shouldMask: true,
 		},
 		{

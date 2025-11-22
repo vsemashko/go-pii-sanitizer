@@ -179,7 +179,7 @@ func TestMatchesEdgeCases(t *testing.T) {
 		},
 		{
 			name:    "Multiple PIIs",
-			content: "Email: user1@example.com, Phone: +6591234567, NRIC: S1234567A",
+			content: "Email: user1@example.com, Phone: +6591234567, NRIC: S1234567D",
 			match:   true,
 		},
 		{

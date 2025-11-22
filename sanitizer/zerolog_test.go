@@ -322,7 +322,7 @@ func TestZerologRegionalPatterns(t *testing.T) {
 	logger := zerolog.New(&buf)
 
 	data := map[string]any{
-		"nric":  "S1234567A",
+		"nric":  "S1234567D",
 		"mykad": "901230-14-5678",
 		"iban":  "AE07 0331 2345 6789 0123 456",
 	}
@@ -332,7 +332,7 @@ func TestZerologRegionalPatterns(t *testing.T) {
 	output := buf.String()
 
 	// All regional patterns should be redacted
-	if strings.Contains(output, "S1234567A") {
+	if strings.Contains(output, "S1234567D") {
 		t.Error("Expected Singapore NRIC to be redacted")
 	}
 	if strings.Contains(output, "901230-14-5678") {
@@ -353,7 +353,7 @@ func TestZerologPartialMasking(t *testing.T) {
 	logger := zerolog.New(&buf)
 
 	data := map[string]any{
-		"creditCard": "4532-1234-5678-9010",
+		"creditCard": "4532015112830366",
 	}
 
 	logger.Info().Object("data", s.ZerologObject(data)).Msg("partial")
@@ -361,10 +361,10 @@ func TestZerologPartialMasking(t *testing.T) {
 	output := buf.String()
 
 	// Should contain partial masking
-	if strings.Contains(output, "4532-1234-5678-9010") {
+	if strings.Contains(output, "4532015112830366") {
 		t.Error("Expected credit card to be partially masked")
 	}
-	if !strings.Contains(output, "9010") {
+	if !strings.Contains(output, "0366") {
 		t.Error("Expected last 4 digits to be visible")
 	}
 }

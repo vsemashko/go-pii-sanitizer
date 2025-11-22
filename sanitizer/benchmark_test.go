@@ -124,7 +124,7 @@ func BenchmarkPartialMasking(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		s.SanitizeField("creditCard", "4532-1234-5678-9010")
+		s.SanitizeField("creditCard", "4532015112830366")
 	}
 }
 
@@ -140,7 +140,7 @@ func BenchmarkHashStrategy(b *testing.B) {
 // Benchmark region-specific patterns
 func BenchmarkSingaporeNRIC(b *testing.B) {
 	s := NewForRegion(Singapore)
-	text := "My NRIC is S1234567A"
+	text := "My NRIC is S1234567D"
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {

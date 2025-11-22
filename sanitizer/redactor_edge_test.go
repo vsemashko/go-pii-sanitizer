@@ -321,7 +321,7 @@ func TestNewForRegion_MultipleRegions(t *testing.T) {
 		value    string
 		redacted bool
 	}{
-		{"nric", "S1234567A", true},               // Singapore
+		{"nric", "S1234567D", true},               // Singapore
 		{"ic", "901230-14-5678", true},            // Malaysia
 		{"eid", "784-2020-1234567-1", true},       // UAE
 		{"nationalId", "1-2345-67890-12-3", true}, // Thailand
@@ -338,22 +338,9 @@ func TestNewForRegion_MultipleRegions(t *testing.T) {
 	}
 }
 
-func TestNewForRegion_NoRegions(t *testing.T) {
-	// Should create sanitizer with only common patterns
-	s := NewForRegion()
-
-	// Common patterns should still work
-	result := s.SanitizeField("email", "user@example.com")
-	if result == "user@example.com" {
-		t.Error("Expected email to be redacted")
-	}
-
-	// Regional patterns should not match
-	result = s.SanitizeField("nric", "S1234567A")
-	if result != "S1234567A" {
-		t.Error("Expected NRIC to NOT be redacted when no regions enabled")
-	}
-}
+// TestNewForRegion_NoRegions removed - Empty regions now causes validation panic
+// Config validation requires at least one region to prevent misconfiguration
+// Use NewForRegion(Singapore) for minimal configuration instead
 
 // Helper function
 func containsStr(s, substr string) bool {

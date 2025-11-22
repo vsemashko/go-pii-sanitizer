@@ -57,7 +57,7 @@ func TestCaseInsensitiveFieldNames(t *testing.T) {
 func TestMultiplePIIInSingleValue(t *testing.T) {
 	s := NewDefault()
 
-	text := "Contact John Doe at john@example.com or +6591234567 for NRIC S1234567A"
+	text := "Contact John Doe at john@example.com or +6591234567 for NRIC S1234567D"
 	result := s.SanitizeField("description", text)
 
 	// Should be redacted because it contains multiple PII patterns
@@ -218,7 +218,7 @@ func TestAllRegions(t *testing.T) {
 		name  string
 		value string
 	}{
-		{"Singapore NRIC", "S1234567A"},
+		{"Singapore NRIC", "S1234567D"},
 		{"Malaysia MyKad", "901230-14-5678"},
 		{"UAE Emirates ID", "784-2020-1234567-1"},
 		{"Thailand ID", "1-2345-67890-12-3"},
@@ -239,8 +239,8 @@ func TestSingleRegion(t *testing.T) {
 	s := NewForRegion(Singapore)
 
 	// Singapore NRIC should be detected
-	result := s.SanitizeField("text", "S1234567A")
-	if result == "S1234567A" {
+	result := s.SanitizeField("text", "S1234567D")
+	if result == "S1234567D" {
 		t.Error("Expected Singapore NRIC to be redacted")
 	}
 
@@ -321,32 +321,10 @@ func TestBankAccountFields(t *testing.T) {
 	}
 }
 
-func TestIPAddressDetection(t *testing.T) {
-	s := NewDefault()
-
-	tests := []struct {
-		name       string
-		value      string
-		shouldMask bool
-	}{
-		{"IPv4 valid", "192.168.1.1", true},
-		{"IPv4 in text", "Server at 10.0.0.1 failed", true},
-		{"IPv6", "2001:0db8:85a3:0000:0000:8a2e:0370:7334", true},
-		{"Not an IP", "123.456.789.0", false}, // Invalid IP
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := s.SanitizeField("text", tt.value)
-			if tt.shouldMask && result == tt.value {
-				t.Errorf("Expected %s to be redacted", tt.value)
-			}
-			if !tt.shouldMask && result != tt.value {
-				t.Errorf("Expected %s to be preserved", tt.value)
-			}
-		})
-	}
-}
+// TestIPAddressDetection removed - IP addresses are no longer detected by default
+// Rationale: IPs rarely qualify as PII under GDPR/PDPA and caused false positives
+// on version numbers (1.2.3.4), configuration values, etc.
+// Users can add IP detection via config.CustomContentPatterns if needed
 
 func TestPhoneNumberVariations(t *testing.T) {
 	s := NewForRegion(Singapore, Malaysia, UAE, Thailand, HongKong)

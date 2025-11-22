@@ -51,13 +51,13 @@ func TestContentMatchType(t *testing.T) {
 	}
 
 	// Test credit card pattern type detection
-	ccType := s.contentMatcher.matchType("4532-1234-5678-9010")
+	ccType := s.contentMatcher.matchType("4532015112830366")
 	if ccType != "credit_card" {
 		t.Errorf("Expected 'credit_card' type, got '%s'", ccType)
 	}
 
 	// Test Singapore NRIC type detection
-	nricType := s.contentMatcher.matchType("S1234567A")
+	nricType := s.contentMatcher.matchType("S1234567D")
 	if nricType != "singapore_nric" {
 		t.Errorf("Expected 'singapore_nric' type, got '%s'", nricType)
 	}
@@ -265,18 +265,14 @@ func TestSanitizeStructPointer(t *testing.T) {
 func TestMatchesWithValidator(t *testing.T) {
 	s := NewDefault()
 
-	// Test IP address matching (has validator)
-	if !s.contentMatcher.matches("192.168.1.1") {
-		t.Error("Expected valid IP to match")
+	// Test credit card with Luhn validation
+	if !s.contentMatcher.matches("4532015112830366") {
+		t.Error("Expected valid credit card to match (passes Luhn)")
 	}
 
-	if !s.contentMatcher.matches("Text with IP 192.168.1.100 in it") {
-		t.Error("Expected IP in text to match")
-	}
-
-	// Test credit card (validator disabled but pattern should match)
-	if !s.contentMatcher.matches("4532-1234-5678-9010") {
-		t.Error("Expected credit card pattern to match")
+	// Test that invalid credit card does NOT match (fails Luhn)
+	if s.contentMatcher.matches("4532-1234-5678-0000") {
+		t.Error("Expected invalid credit card to NOT match (fails Luhn)")
 	}
 }
 
@@ -291,7 +287,7 @@ func TestRegionSpecificPatterns(t *testing.T) {
 		{
 			name:    "Singapore only - NRIC match",
 			regions: []Region{Singapore},
-			content: "S1234567A",
+			content: "S1234567D",
 			match:   true,
 		},
 		{

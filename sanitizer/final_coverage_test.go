@@ -173,8 +173,8 @@ func TestContentMatcherAllPatterns(t *testing.T) {
 		match   bool
 	}{
 		{"Email", "contact@example.com", true},
-		{"Credit Card", "4532-1234-5678-9010", true},
-		{"IP Address", "192.168.1.1", true},
+		{"Credit Card", "4532015112830366", true},
+		// IP Address removed - no longer detected by default
 		{"SG Phone", "+6591234567", true},
 		{"MY Phone", "+60123456789", true},
 		{"UAE Phone", "+971501234567", true},

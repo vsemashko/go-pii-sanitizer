@@ -196,20 +196,9 @@ func TestFieldMatcher_EdgeCases(t *testing.T) {
 	}
 }
 
-func TestContentMatcher_NoPatterns(t *testing.T) {
-	// Create sanitizer with no content patterns
-	config := NewDefaultConfig()
-	config.Regions = []Region{} // No regions = no regional patterns
-	s := New(config)
-
-	// Should still have common patterns, but test with content that won't match
-	result := s.SanitizeField("field", "random text 12345")
-
-	// Should be preserved since no patterns match
-	if result == "[REDACTED]" {
-		t.Error("Expected content to be preserved when no patterns match")
-	}
-}
+// TestContentMatcher_NoPatterns removed - Empty regions now causes validation error
+// Config validation ensures at least one region must be enabled
+// This is intentional to prevent misconfiguration
 
 func TestFieldMatcher_WithCustomPatterns(t *testing.T) {
 	config := NewDefaultConfig()

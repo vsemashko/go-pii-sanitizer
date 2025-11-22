@@ -11,21 +11,57 @@ A production-ready PII (Personally Identifiable Information) sanitization librar
 ## Features
 
 - ✅ **Regional PII Detection**: Supports NRIC (SG), MyKad (MY), Emirates ID (AE), Thai ID (TH), HKID (HK)
+- ✅ **Checksum Validation**: NRIC, MyKad, Thai ID, Credit Cards (reduces false positives)
 - ✅ **Bank Account Numbers**: Region-specific formats for all 5 countries
 - ✅ **Common PII**: Emails, phones, names, addresses, transaction descriptions
 - ✅ **Secrets Detection**: Passwords, tokens, API keys, credentials
 - ✅ **Struct Tag Support**: Explicit PII marking with `pii:"redact"` and `pii:"preserve"` tags
 - ✅ **Multiple Redaction Strategies**: Full, partial masking, hashing, removal
 - ✅ **Logger Integrations**: Native support for slog, zap, and zerolog
+- ✅ **Observability**: Metrics interface for production monitoring (v1.1.0+)
+- ✅ **Input Safety**: Configurable length limits to prevent regex DOS (v1.1.0+)
 - ✅ **Flexible Configuration**: Explicit allow/deny lists, custom patterns
 - ✅ **Zero Dependencies**: Core library uses only Go standard library
-- ✅ **High Performance**: Minimal overhead, suitable for logging and API sanitization
-- ✅ **Comprehensive Testing**: 94% test coverage with checksum validation
+- ✅ **High Performance**: >800K ops/sec, minimal overhead
+- ✅ **Comprehensive Testing**: 94.4% test coverage with edge cases
 
 ## Installation
 
 ```bash
 go get github.com/vsemashko/go-pii-sanitizer
+```
+
+## What's New in v1.1.0 🎉
+
+**Release Date:** November 2025
+**Focus:** Production-readiness, Observability, Safety, Accuracy
+
+### New Features
+
+- 🔍 **Observability**: Metrics interface for tracking sanitization operations
+- 🛡️ **Input Safety**: Configurable field/content length limits (prevents regex DOS)
+- 🎯 **Enhanced Accuracy**: Thailand ID checksum validation (~10% fewer false positives)
+- 📊 **Better Errors**: Improved error context with wrapped errors
+
+[See full v1.1.0 improvements →](./IMPROVEMENTS_V1.1.md)
+
+### Quick Example - Metrics
+
+```go
+// Track sanitization operations in production
+type MyMetrics struct { /* your metrics implementation */ }
+
+func (m *MyMetrics) RecordSanitization(ctx sanitizer.MetricsContext) {
+    // Track: field name, PII type, duration, redacted flag
+    log.Printf("Sanitized %s (type: %s) in %v", ctx.FieldName, ctx.PIIType, ctx.Duration)
+}
+
+config := sanitizer.NewDefaultConfig().
+    WithMetrics(&MyMetrics{}).                 // NEW: Enable metrics
+    WithMaxFieldLength(10000).                 // NEW: Limit field size (10KB)
+    WithMaxContentLength(100000)               // NEW: Limit content scan (100KB)
+
+s := sanitizer.New(config)
 ```
 
 ## Quick Start

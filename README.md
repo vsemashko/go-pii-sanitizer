@@ -1,5 +1,10 @@
 # Go PII Sanitizer
 
+[![CI](https://github.com/vsemashko/go-pii-sanitizer/workflows/CI/badge.svg)](https://github.com/vsemashko/go-pii-sanitizer/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/vsemashko/go-pii-sanitizer)](https://goreportcard.com/report/github.com/vsemashko/go-pii-sanitizer)
+[![GoDoc](https://godoc.org/github.com/vsemashko/go-pii-sanitizer?status.svg)](https://godoc.org/github.com/vsemashko/go-pii-sanitizer/sanitizer)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A production-ready PII (Personally Identifiable Information) sanitization library for Go, targeting **Singapore, Malaysia, UAE, Thailand, and Hong Kong** markets.
 
 ## Features
@@ -8,7 +13,9 @@ A production-ready PII (Personally Identifiable Information) sanitization librar
 - ✅ **Bank Account Numbers**: Region-specific formats for all 5 countries
 - ✅ **Common PII**: Emails, phones, names, addresses, transaction descriptions
 - ✅ **Secrets Detection**: Passwords, tokens, API keys, credentials
+- ✅ **Struct Tag Support**: Explicit PII marking with `pii:"redact"` and `pii:"preserve"` tags
 - ✅ **Multiple Redaction Strategies**: Full, partial masking, hashing, removal
+- ✅ **Logger Integrations**: Native support for slog, zap, and zerolog
 - ✅ **Flexible Configuration**: Explicit allow/deny lists, custom patterns
 - ✅ **Zero Dependencies**: Core library uses only Go standard library
 - ✅ **High Performance**: Minimal overhead, suitable for logging and API sanitization
@@ -201,6 +208,76 @@ sanitized := s.SanitizeStruct(user)
 // Returns map with email and name redacted, OrderID preserved
 ```
 
+### Struct Tag Support
+
+Use struct tags to explicitly control PII sanitization behavior:
+
+```go
+type User struct {
+    Email    string `json:"email" pii:"redact"`
+    FullName string `json:"fullName" pii:"redact"`
+    OrderID  string `json:"orderId" pii:"preserve"`
+    Age      int    `json:"age"`  // Uses pattern matching
+}
+
+user := User{
+    Email:    "user@example.com",
+    FullName: "John Doe",
+    OrderID:  "ORD-123",
+    Age:      30,
+}
+
+s := sanitizer.NewDefault()
+result := s.SanitizeStructWithTags(user)
+// {
+//   "email": "[REDACTED]",      // Redacted by tag
+//   "fullName": "[REDACTED]",   // Redacted by tag
+//   "orderId": "ORD-123",       // Preserved by tag
+//   "age": 30                    // Preserved (no PII pattern match)
+// }
+```
+
+**Tag Priority:** `pii:"preserve"` > `pii:"redact"` > pattern matching
+
+**Available tags:**
+- `pii:"redact"` - Always redact this field
+- `pii:"preserve"` - Never redact this field (overrides pattern matching)
+- `pii:"redact,sensitive"` - Redact and mark as sensitive (for audit logs)
+
+**Advanced example with nested structs:**
+
+```go
+type Address struct {
+    Street string `json:"street" pii:"redact"`
+    City   string `json:"city" pii:"preserve"`
+}
+
+type Customer struct {
+    Name    string  `json:"name" pii:"redact"`
+    Address Address `json:"address"`
+    OrderID string  `json:"orderId" pii:"preserve"`
+}
+
+customer := Customer{
+    Name: "John Doe",
+    Address: Address{
+        Street: "123 Main St",
+        City:   "Singapore",
+    },
+    OrderID: "ORD-123",
+}
+
+result := s.SanitizeStructWithTags(customer)
+// {
+//   "name": "[REDACTED]",
+//   "address": {
+//     "street": "[REDACTED]",
+//     "city": "Singapore"
+//   },
+//   "orderId": "ORD-123"
+// }
+```
+
 ## Configuration Options
 
 | Option | Description | Default |
@@ -223,17 +300,67 @@ sanitized := s.SanitizeStruct(user)
 
 Suitable for high-volume logging and API sanitization at < 100 requests/min.
 
-## Testing
+## Development
+
+### Quick Commands (Makefile)
+
+The project includes a comprehensive Makefile for common development tasks:
 
 ```bash
-# Run tests
+# Run all tests
+make test
+
+# Run tests with coverage report
+make coverage
+
+# Generate HTML coverage report
+make coverage-html
+
+# Run benchmarks
+make bench
+
+# Format code
+make fmt
+
+# Run linters
+make lint
+
+# Run all checks (fmt, vet, test, coverage)
+make all
+
+# Clean build artifacts
+make clean
+
+# Show all available targets
+make help
+```
+
+### Testing
+
+```bash
+# Using Makefile (recommended)
+make test              # Run all tests
+make test-verbose      # Verbose output
+make test-coverage     # With coverage
+make coverage-html     # HTML coverage report
+
+# Using go test directly
 go test ./sanitizer/...
-
-# Run tests with coverage
 go test ./sanitizer/... -cover
-
-# Verbose output
 go test ./sanitizer/... -v
+go test -race ./sanitizer/...  # Race detector
+```
+
+### Benchmarks
+
+```bash
+# Using Makefile
+make bench              # Run all benchmarks
+make bench-cpu          # With CPU profiling
+make bench-mem          # With memory profiling
+
+# Using go test
+go test -bench=. -benchmem ./sanitizer/...
 ```
 
 ## Use Cases
@@ -376,6 +503,14 @@ Each example demonstrates:
 - Custom configurations (logs vs UI)
 - Different redaction strategies
 
+## Documentation
+
+For more detailed information, see the documentation in the [`docs/`](./docs) directory:
+
+- **[Pattern Reference](./docs/PATTERNS.md)** - Complete reference of all PII patterns (common + regional)
+- **[Performance Guide](./docs/PERFORMANCE.md)** - Benchmarks, optimization strategies, and best practices
+- **[Compliance Guide](./docs/COMPLIANCE.md)** - Regulatory compliance for SG, MY, AE, TH, HK
+
 ## Compliance
 
 Designed to help with data protection regulations in target regions:
@@ -386,20 +521,145 @@ Designed to help with data protection regulations in target regions:
 - 🇹🇭 Thailand PDPA (2022)
 - 🇭🇰 Hong Kong PDPO (Personal Data Privacy Ordinance)
 
+See the [Compliance Guide](./docs/COMPLIANCE.md) for detailed implementation guidance.
+
+## Troubleshooting
+
+### False Positives (Non-PII being redacted)
+
+**Problem:** Order IDs, transaction IDs, or other business identifiers are being redacted.
+
+**Solution:** Add them to the explicit preserve list:
+
+```go
+config := sanitizer.NewDefaultConfig().
+    WithPreserve("orderId", "transactionId", "productId", "sessionId")
+s := sanitizer.New(config)
+```
+
+Or use struct tags:
+
+```go
+type Order struct {
+    OrderID string `json:"orderId" pii:"preserve"`
+    // ...
+}
+```
+
+### False Negatives (PII not being redacted)
+
+**Problem:** PII is not being detected.
+
+**Solution 1:** Add custom patterns:
+
+```go
+config := sanitizer.NewDefaultConfig().
+    WithRedact("customPIIField", "internalNotes")
+```
+
+**Solution 2:** Use struct tags for explicit marking:
+
+```go
+type Data struct {
+    InternalNotes string `pii:"redact"`
+}
+```
+
+### Performance Issues
+
+**Problem:** Sanitization is slow for large nested structures.
+
+**Solution:** See the [Performance Guide](./docs/PERFORMANCE.md) for optimization strategies:
+
+1. Use explicit preserve lists to skip pattern matching
+2. Enable only needed regions
+3. Use `SanitizeMap` instead of `SanitizeStruct` when possible
+4. Limit nesting depth: `config.MaxDepth = 5`
+
+### Regional Patterns Not Matching
+
+**Problem:** Singapore NRIC not being detected.
+
+**Solution:** Ensure the region is enabled:
+
+```go
+// All regions (default)
+s := sanitizer.NewDefault()
+
+// Specific region
+s := sanitizer.NewForRegion(sanitizer.Singapore)
+```
+
+### Getting Help
+
+- Check the [Documentation](./docs)
+- Search [existing issues](https://github.com/vsemashko/go-pii-sanitizer/issues)
+- Open a [new issue](https://github.com/vsemashko/go-pii-sanitizer/issues/new) with:
+  - Go version (`go version`)
+  - Library version
+  - Minimal reproducible example
+  - Expected vs actual behavior
+
 ## License
 
 MIT
 
 ## Contributing
 
-Contributions welcome! Please open an issue or PR.
+Contributions are welcome! Here's how to contribute:
+
+1. **Fork the repository**
+2. **Create a feature branch:** `git checkout -b feature/my-feature`
+3. **Make your changes**
+4. **Run tests:** `make test`
+5. **Run linters:** `make lint`
+6. **Format code:** `make fmt`
+7. **Commit your changes:** `git commit -am 'Add new feature'`
+8. **Push to the branch:** `git push origin feature/my-feature`
+9. **Submit a pull request**
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/vsemashko/go-pii-sanitizer.git
+cd go-pii-sanitizer
+
+# Install Go (using mise)
+mise install
+
+# Download dependencies
+go mod download
+
+# Run tests
+make test
+
+# Run all checks
+make all
+```
+
+### Code Standards
+
+- Follow Go best practices and idioms
+- Add tests for new features
+- Update documentation as needed
+- Run `make all` before submitting PR
+- Keep test coverage above 85%
 
 ## Roadmap
 
+**Completed:**
 - [x] Core PII sanitizer (Week 1) ✅
 - [x] slog, zap, zerolog logger integrations (Week 2) ✅
-- [x] Comprehensive test suite with benchmarks ✅
+- [x] Comprehensive test suite with benchmarks (Week 3) ✅
+- [x] Complete documentation (PATTERNS.md, PERFORMANCE.md, COMPLIANCE.md) ✅
+- [x] Struct tag support (`pii:"redact"`, `pii:"preserve"`) ✅
+- [x] Makefile for development tasks ✅
+- [x] GitHub Actions CI/CD pipeline ✅
+
+**Future:**
 - [ ] Context-aware detection for reduced false positives
 - [ ] Microsoft Presidio integration (optional, for ML-powered detection)
-- [ ] Struct tag support (`pii:"redact"`)
 - [ ] Additional regions (Indonesia, Philippines, Vietnam, etc.)
+- [ ] Custom validation functions per field
+- [ ] Streaming JSON sanitization for large payloads

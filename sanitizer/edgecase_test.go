@@ -57,7 +57,7 @@ func TestCaseInsensitiveFieldNames(t *testing.T) {
 func TestMultiplePIIInSingleValue(t *testing.T) {
 	s := NewDefault()
 
-	text := "Contact John Doe at john@example.com or +6591234567 for NRIC S1234567A"
+	text := "Contact John Doe at john@example.com or +6591234567 for NRIC S1234567D"
 	result := s.SanitizeField("description", text)
 
 	// Should be redacted because it contains multiple PII patterns
@@ -70,12 +70,12 @@ func TestLongNestedStructure(t *testing.T) {
 	s := NewDefault()
 
 	// Create deeply nested structure
-	data := map[string]interface{}{
-		"level1": map[string]interface{}{
-			"level2": map[string]interface{}{
-				"level3": map[string]interface{}{
-					"level4": map[string]interface{}{
-						"level5": map[string]interface{}{
+	data := map[string]any{
+		"level1": map[string]any{
+			"level2": map[string]any{
+				"level3": map[string]any{
+					"level4": map[string]any{
+						"level5": map[string]any{
 							"email": "user@example.com",
 						},
 					},
@@ -87,11 +87,11 @@ func TestLongNestedStructure(t *testing.T) {
 	result := s.SanitizeMap(data)
 
 	// Navigate to deepest level
-	l1 := result["level1"].(map[string]interface{})
-	l2 := l1["level2"].(map[string]interface{})
-	l3 := l2["level3"].(map[string]interface{})
-	l4 := l3["level4"].(map[string]interface{})
-	l5 := l4["level5"].(map[string]interface{})
+	l1 := result["level1"].(map[string]any)
+	l2 := l1["level2"].(map[string]any)
+	l3 := l2["level3"].(map[string]any)
+	l4 := l3["level4"].(map[string]any)
+	l5 := l4["level5"].(map[string]any)
 
 	if l5["email"] == "user@example.com" {
 		t.Error("Expected deeply nested email to be redacted")
@@ -101,13 +101,13 @@ func TestLongNestedStructure(t *testing.T) {
 func TestSliceOfMaps(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
-		"users": []interface{}{
-			map[string]interface{}{
+	data := map[string]any{
+		"users": []any{
+			map[string]any{
 				"email": "user1@example.com",
 				"name":  "User One",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"email": "user2@example.com",
 				"name":  "User Two",
 			},
@@ -115,14 +115,14 @@ func TestSliceOfMaps(t *testing.T) {
 	}
 
 	result := s.SanitizeMap(data)
-	users := result["users"].([]interface{})
+	users := result["users"].([]any)
 
-	user1 := users[0].(map[string]interface{})
+	user1 := users[0].(map[string]any)
 	if user1["email"] == "user1@example.com" {
 		t.Error("Expected email in slice to be redacted")
 	}
 
-	user2 := users[1].(map[string]interface{})
+	user2 := users[1].(map[string]any)
 	if user2["email"] == "user2@example.com" {
 		t.Error("Expected email in slice to be redacted")
 	}
@@ -131,8 +131,8 @@ func TestSliceOfMaps(t *testing.T) {
 func TestSliceOfStrings(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
-		"emails": []interface{}{
+	data := map[string]any{
+		"emails": []any{
 			"user1@example.com",
 			"user2@example.com",
 			"not-an-email",
@@ -140,7 +140,7 @@ func TestSliceOfStrings(t *testing.T) {
 	}
 
 	result := s.SanitizeMap(data)
-	emails := result["emails"].([]interface{})
+	emails := result["emails"].([]any)
 
 	// Email patterns in slice content should be detected
 	if emails[0] == "user1@example.com" {
@@ -157,7 +157,7 @@ func TestSliceOfStrings(t *testing.T) {
 func TestMixedTypes(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"string":  "user@example.com",
 		"int":     12345,
 		"float":   99.99,
@@ -218,7 +218,7 @@ func TestAllRegions(t *testing.T) {
 		name  string
 		value string
 	}{
-		{"Singapore NRIC", "S1234567A"},
+		{"Singapore NRIC", "S1234567D"},
 		{"Malaysia MyKad", "901230-14-5678"},
 		{"UAE Emirates ID", "784-2020-1234567-1"},
 		{"Thailand ID", "1-2345-67890-12-3"},
@@ -239,8 +239,8 @@ func TestSingleRegion(t *testing.T) {
 	s := NewForRegion(Singapore)
 
 	// Singapore NRIC should be detected
-	result := s.SanitizeField("text", "S1234567A")
-	if result == "S1234567A" {
+	result := s.SanitizeField("text", "S1234567D")
+	if result == "S1234567D" {
 		t.Error("Expected Singapore NRIC to be redacted")
 	}
 
@@ -321,32 +321,10 @@ func TestBankAccountFields(t *testing.T) {
 	}
 }
 
-func TestIPAddressDetection(t *testing.T) {
-	s := NewDefault()
-
-	tests := []struct {
-		name       string
-		value      string
-		shouldMask bool
-	}{
-		{"IPv4 valid", "192.168.1.1", true},
-		{"IPv4 in text", "Server at 10.0.0.1 failed", true},
-		{"IPv6", "2001:0db8:85a3:0000:0000:8a2e:0370:7334", true},
-		{"Not an IP", "123.456.789.0", false}, // Invalid IP
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := s.SanitizeField("text", tt.value)
-			if tt.shouldMask && result == tt.value {
-				t.Errorf("Expected %s to be redacted", tt.value)
-			}
-			if !tt.shouldMask && result != tt.value {
-				t.Errorf("Expected %s to be preserved", tt.value)
-			}
-		})
-	}
-}
+// TestIPAddressDetection removed - IP addresses are no longer detected by default
+// Rationale: IPs rarely qualify as PII under GDPR/PDPA and caused false positives
+// on version numbers (1.2.3.4), configuration values, etc.
+// Users can add IP detection via config.CustomContentPatterns if needed
 
 func TestPhoneNumberVariations(t *testing.T) {
 	s := NewForRegion(Singapore, Malaysia, UAE, Thailand, HongKong)

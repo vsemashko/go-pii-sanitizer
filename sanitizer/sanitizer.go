@@ -35,6 +35,13 @@ func New(config *Config) *Sanitizer {
 		config = NewDefaultConfig()
 	}
 
+	// Validate configuration
+	// Note: We panic on invalid config since this is a constructor
+	// Invalid configs are programmer errors, not runtime errors
+	if err := config.Validate(); err != nil {
+		panic(err)
+	}
+
 	s := &Sanitizer{
 		config:         config,
 		explicitRedact: make(map[string]bool),
@@ -183,17 +190,17 @@ func (s *Sanitizer) SanitizeField(fieldName, value string) string {
 }
 
 // SanitizeMap sanitizes a map (common for JSON-like structures)
-func (s *Sanitizer) SanitizeMap(m map[string]interface{}) map[string]interface{} {
+func (s *Sanitizer) SanitizeMap(m map[string]any) map[string]any {
 	return s.sanitizeMapRecursive(m, 0)
 }
 
 // sanitizeMapRecursive sanitizes a map recursively with depth tracking
-func (s *Sanitizer) sanitizeMapRecursive(m map[string]interface{}, depth int) map[string]interface{} {
+func (s *Sanitizer) sanitizeMapRecursive(m map[string]any, depth int) map[string]any {
 	if depth > s.config.MaxDepth {
 		return m
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	for k, v := range m {
 		switch val := v.(type) {
 		case string:
@@ -204,10 +211,10 @@ func (s *Sanitizer) sanitizeMapRecursive(m map[string]interface{}, depth int) ma
 			}
 			result[k] = sanitized
 
-		case map[string]interface{}:
+		case map[string]any:
 			result[k] = s.sanitizeMapRecursive(val, depth+1)
 
-		case []interface{}:
+		case []any:
 			result[k] = s.sanitizeSlice(val, depth+1)
 
 		default:
@@ -219,12 +226,12 @@ func (s *Sanitizer) sanitizeMapRecursive(m map[string]interface{}, depth int) ma
 }
 
 // sanitizeSlice sanitizes a slice recursively
-func (s *Sanitizer) sanitizeSlice(slice []interface{}, depth int) []interface{} {
+func (s *Sanitizer) sanitizeSlice(slice []any, depth int) []any {
 	if depth > s.config.MaxDepth {
 		return slice
 	}
 
-	result := make([]interface{}, len(slice))
+	result := make([]any, len(slice))
 	for i, v := range slice {
 		switch val := v.(type) {
 		case string:
@@ -235,10 +242,10 @@ func (s *Sanitizer) sanitizeSlice(slice []interface{}, depth int) []interface{} 
 				result[i] = val
 			}
 
-		case map[string]interface{}:
+		case map[string]any:
 			result[i] = s.sanitizeMapRecursive(val, depth+1)
 
-		case []interface{}:
+		case []any:
 			result[i] = s.sanitizeSlice(val, depth+1)
 
 		default:
@@ -250,7 +257,7 @@ func (s *Sanitizer) sanitizeSlice(slice []interface{}, depth int) []interface{} 
 
 // SanitizeJSON sanitizes JSON data
 func (s *Sanitizer) SanitizeJSON(data []byte) ([]byte, error) {
-	var m map[string]interface{}
+	var m map[string]any
 	if err := json.Unmarshal(data, &m); err != nil {
 		return nil, err
 	}
@@ -261,17 +268,17 @@ func (s *Sanitizer) SanitizeJSON(data []byte) ([]byte, error) {
 
 // SanitizeStruct sanitizes a struct by converting it to a map
 // This uses JSON marshaling/unmarshaling which has overhead but works with any struct
-func (s *Sanitizer) SanitizeStruct(v interface{}) map[string]interface{} {
+func (s *Sanitizer) SanitizeStruct(v any) map[string]any {
 	// Convert struct to JSON, then to map
 	data, err := json.Marshal(v)
 	if err != nil {
 		// If marshaling fails, return empty map
-		return make(map[string]interface{})
+		return make(map[string]any)
 	}
 
-	var m map[string]interface{}
+	var m map[string]any
 	if err := json.Unmarshal(data, &m); err != nil {
-		return make(map[string]interface{})
+		return make(map[string]any)
 	}
 
 	return s.SanitizeMap(m)

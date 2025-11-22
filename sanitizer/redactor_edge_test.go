@@ -215,7 +215,7 @@ func TestCompilePatterns_WithInvalidRegex(t *testing.T) {
 func TestSanitizeMap_EmptyMap(t *testing.T) {
 	s := NewDefault()
 
-	result := s.SanitizeMap(map[string]interface{}{})
+	result := s.SanitizeMap(map[string]any{})
 
 	if len(result) != 0 {
 		t.Error("Expected empty result for empty map")
@@ -246,7 +246,7 @@ func TestSanitizeSlice_NilSlice(t *testing.T) {
 func TestSanitizeSlice_EmptySlice(t *testing.T) {
 	s := NewDefault()
 
-	result := s.sanitizeSlice([]interface{}{}, 0)
+	result := s.sanitizeSlice([]any{}, 0)
 
 	if len(result) != 0 {
 		t.Error("Expected empty slice result")
@@ -288,7 +288,7 @@ func TestSanitizeStruct_NonStructTypes(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		input       interface{}
+		input       any
 		expectEmpty bool
 	}{
 		{"String", "test", true},
@@ -317,15 +317,15 @@ func TestNewForRegion_MultipleRegions(t *testing.T) {
 
 	// Test that all region patterns are enabled
 	tests := []struct {
-		field   string
-		value   string
+		field    string
+		value    string
 		redacted bool
 	}{
-		{"nric", "S1234567A", true},       // Singapore
-		{"ic", "901230-14-5678", true},    // Malaysia
-		{"eid", "784-2020-1234567-1", true}, // UAE
+		{"nric", "S1234567D", true},               // Singapore
+		{"ic", "901230-14-5678", true},            // Malaysia
+		{"eid", "784-2020-1234567-1", true},       // UAE
 		{"nationalId", "1-2345-67890-12-3", true}, // Thailand
-		{"hkid", "A123456(7)", true},      // Hong Kong
+		{"hkid", "A123456(7)", true},              // Hong Kong
 	}
 
 	for _, tt := range tests {
@@ -338,22 +338,9 @@ func TestNewForRegion_MultipleRegions(t *testing.T) {
 	}
 }
 
-func TestNewForRegion_NoRegions(t *testing.T) {
-	// Should create sanitizer with only common patterns
-	s := NewForRegion()
-
-	// Common patterns should still work
-	result := s.SanitizeField("email", "user@example.com")
-	if result == "user@example.com" {
-		t.Error("Expected email to be redacted")
-	}
-
-	// Regional patterns should not match
-	result = s.SanitizeField("nric", "S1234567A")
-	if result != "S1234567A" {
-		t.Error("Expected NRIC to NOT be redacted when no regions enabled")
-	}
-}
+// TestNewForRegion_NoRegions removed - Empty regions now causes validation panic
+// Config validation requires at least one region to prevent misconfiguration
+// Use NewForRegion(Singapore) for minimal configuration instead
 
 // Helper function
 func containsStr(s, substr string) bool {

@@ -51,8 +51,8 @@ func TestSanitizeValueRecursive_AllTypes(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		input    interface{}
-		expected interface{}
+		input    any
+		expected any
 	}{
 		{
 			name:     "Nil value",
@@ -87,19 +87,19 @@ func TestSanitizeValueRecursive_AllTypes(t *testing.T) {
 		{
 			name:     "Slice of strings",
 			input:    []string{"test1", "test2"},
-			expected: []interface{}{"test1", "test2"},
+			expected: []any{"test1", "test2"},
 		},
 		{
 			name:     "Slice of integers",
 			input:    []int{1, 2, 3},
-			expected: []interface{}{1, 2, 3},
+			expected: []any{1, 2, 3},
 		},
 		{
 			name: "Map[string]string",
 			input: map[string]string{
 				"key": "value",
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"key": "value",
 			},
 		},
@@ -152,7 +152,7 @@ func TestSanitizeValueRecursive_NestedStruct(t *testing.T) {
 
 	result := s.sanitizeValueRecursive("user", inner, 0)
 
-	resultMap, ok := result.(map[string]interface{})
+	resultMap, ok := result.(map[string]any)
 	if !ok {
 		t.Fatal("Expected map result")
 	}
@@ -165,16 +165,16 @@ func TestSanitizeValueRecursive_NestedStruct(t *testing.T) {
 func TestSanitizeValueRecursive_NestedMap(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"email": "user@example.com",
-		"nested": map[string]interface{}{
+		"nested": map[string]any{
 			"phone": "+6591234567",
 		},
 	}
 
 	result := s.sanitizeValueRecursive("data", data, 0)
 
-	resultMap, ok := result.(map[string]interface{})
+	resultMap, ok := result.(map[string]any)
 	if !ok {
 		t.Fatal("Expected map result")
 	}
@@ -183,7 +183,7 @@ func TestSanitizeValueRecursive_NestedMap(t *testing.T) {
 		t.Error("Expected email to be redacted")
 	}
 
-	nested, ok := resultMap["nested"].(map[string]interface{})
+	nested, ok := resultMap["nested"].(map[string]any)
 	if !ok {
 		t.Fatal("Expected nested map")
 	}
@@ -196,16 +196,16 @@ func TestSanitizeValueRecursive_NestedMap(t *testing.T) {
 func TestSanitizeValueRecursive_NestedSlice(t *testing.T) {
 	s := NewDefault()
 
-	data := []interface{}{
+	data := []any{
 		"user@example.com",
-		map[string]interface{}{
+		map[string]any{
 			"email": "test@example.com",
 		},
 	}
 
 	result := s.sanitizeValueRecursive("emails", data, 0)
 
-	resultSlice, ok := result.([]interface{})
+	resultSlice, ok := result.([]any)
 	if !ok {
 		t.Fatal("Expected slice result")
 	}
@@ -226,9 +226,9 @@ func TestSanitizeValueRecursive_MaxDepth(t *testing.T) {
 	s := New(config)
 
 	// Create deeply nested structure
-	data := map[string]interface{}{
-		"level1": map[string]interface{}{
-			"level2": map[string]interface{}{
+	data := map[string]any{
+		"level1": map[string]any{
+			"level2": map[string]any{
 				"level3": "value",
 			},
 		},
@@ -275,7 +275,7 @@ func TestConvertValue_AllTypes(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		input interface{}
+		input any
 	}{
 		{"Nil", nil},
 		{"String", "test"},
@@ -355,13 +355,13 @@ func TestSanitizeMapValue_MaxDepth(t *testing.T) {
 	config.MaxDepth = 1
 	s := New(config)
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"key": "value",
 	}
 
 	result := s.sanitizeMapValue(toReflectValue(data), 10) // Depth > MaxDepth
 
-	resultMap, ok := result.(map[string]interface{})
+	resultMap, ok := result.(map[string]any)
 	if !ok {
 		t.Fatal("Expected map result")
 	}
@@ -382,7 +382,7 @@ func TestSanitizeMapValue_NonStringKeys(t *testing.T) {
 
 	result := s.sanitizeMapValue(toReflectValue(data), 0)
 
-	resultMap, ok := result.(map[string]interface{})
+	resultMap, ok := result.(map[string]any)
 	if !ok {
 		t.Fatal("Expected map result")
 	}
@@ -402,7 +402,7 @@ func TestSanitizeSliceValue_MaxDepth(t *testing.T) {
 
 	result := s.sanitizeSliceValue(toReflectValue(data), 10) // Depth > MaxDepth
 
-	resultSlice, ok := result.([]interface{})
+	resultSlice, ok := result.([]any)
 	if !ok {
 		t.Fatal("Expected slice result")
 	}
@@ -446,6 +446,6 @@ func TestSanitizeFieldWithTag_InvalidField(t *testing.T) {
 }
 
 // Helper function to create reflect.Value
-func toReflectValue(v interface{}) reflect.Value {
+func toReflectValue(v any) reflect.Value {
 	return reflect.ValueOf(v)
 }

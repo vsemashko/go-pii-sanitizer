@@ -54,6 +54,8 @@ These patterns are enabled for all regions and detect universal PII types.
 
 ### Bank Account Numbers (Priority 3)
 
+**Detection Method:** Field name matching ONLY (no content patterns)
+
 **Field Names:**
 - `accountNumber`, `account_number`, `bankAccount`, `bank_account`
 - `iban`, `accountNo`, `account_no`
@@ -62,11 +64,16 @@ These patterns are enabled for all regions and detect universal PII types.
 **Example Matches:**
 ```json
 {
-  "accountNumber": "1234567890",     // REDACTED
-  "iban": "AE070331234567890123456", // REDACTED
-  "bank_account": "123-456-789"      // REDACTED
+  "accountNumber": "1234567890",     // REDACTED (field name match)
+  "iban": "AE070331234567890123456", // REDACTED (field name match)
+  "bank_account": "123-456-789"      // REDACTED (field name match)
 }
 ```
+
+**⚠️ Important (v1.0 Change):**
+- Bank accounts are detected **only via field name matching**
+- Content patterns removed to prevent false positives on order IDs, transaction IDs, etc.
+- If you need content-based detection, add custom patterns via `config.CustomContentPatterns`
 
 ### Email Addresses (Priority 4)
 
@@ -127,6 +134,8 @@ These patterns are enabled for all regions and detect universal PII types.
 \b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{0,3}\b
 ```
 
+**Validation:** Luhn algorithm (checksum validation)
+
 **Field Names:**
 - `creditCard`, `credit_card`, `cardNumber`, `card_number`
 - `ccNumber`, `cc_number`, `pan`, `paymentCard`
@@ -134,19 +143,41 @@ These patterns are enabled for all regions and detect universal PII types.
 **Example Matches:**
 ```json
 {
-  "creditCard": "4532-1234-5678-9010",      // REDACTED
-  "card_number": "4532 1234 5678 9010"      // REDACTED
+  "creditCard": "4532015112830366",         // REDACTED (valid Luhn)
+  "card_number": "5425233430109903"         // REDACTED (valid Luhn)
 }
 ```
 
-**Note:** Luhn validation is disabled to reduce false negatives. Pattern matching only.
+**Example Non-Matches (v1.0+):**
+```json
+{
+  "text": "Order 4532-1234-5678-9010"       // NOT REDACTED (fails Luhn)
+}
+```
+
+**✅ v1.0 Change:** Luhn validation is **now enabled** to reduce false positives on order numbers, tracking codes, etc. Only valid credit card numbers are detected.
 
 ### IP Addresses
 
-**Content Pattern:**
-```regex
-\b(?:\d{1,3}\.){3}\d{1,3}\b
+**⚠️ REMOVED in v1.0:**
+- IPv4 and IPv6 patterns have been removed from default PII detection
+- **Rationale:** IP addresses rarely qualify as PII under GDPR/PDPA
+- **Issue:** Caused false positives on version numbers (e.g., `v1.2.3.4`), configuration values
+
+**Migration:** If you need IP detection, add custom patterns:
+```go
+config.CustomContentPatterns = append(config.CustomContentPatterns,
+    ContentPattern{
+        Name: "ipv4",
+        Pattern: regexp.MustCompile(`\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b`),
+    },
+)
 ```
+
+~~**Content Pattern:**~~
+~~```regex~~
+~~\b(?:\d{1,3}\.){3}\d{1,3}\b~~
+~~```~~
 
 **Field Names:**
 - `ip`, `ipAddress`, `ip_address`, `clientIp`, `client_ip`
@@ -199,13 +230,22 @@ Regional patterns are enabled based on the configured regions.
 (?i)\b[STFGM]\d{7}[A-Z]\b
 ```
 
+**Validation (v1.0+):** Checksum validation using weighted algorithm
+- **Weights:** [2, 7, 6, 5, 4, 3, 2]
+- **Offset:** +4 for T/G prefixes
+- **Checksum tables:** ST="JZIHGFEDCBA", FG="XWUTRQPNMLK"
+
 **Field Names:**
 - `nric`, `ic`, `identityCard`, `identity_card`, `nationalId`
 
-**Examples:**
-- `S1234567A` ✅
-- `T9876543Z` ✅
-- `F1234567K` ✅
+**Examples (v1.0+ with checksum validation):**
+- `S1234567D` ✅ (valid checksum)
+- `T1234567J` ✅ (valid checksum)
+- `F1234567N` ✅ (valid checksum)
+
+**Non-Matches (invalid checksums):**
+- `S1234567A` ❌ (fails checksum)
+- `T9876543Z` ❌ (fails checksum)
 
 #### Singapore Phone Numbers
 
@@ -223,16 +263,23 @@ Regional patterns are enabled based on the configured regions.
 
 #### Singapore Bank Accounts
 
-**Format:** 7-11 digits, sometimes with dashes
+**⚠️ v1.0 Change:** Content pattern removed (field name matching only)
 
-**Content Pattern:**
-```regex
-\b\d{4}-\d{3}-\d{7,11}\b|\b\d{7,11}\b
-```
+**Detection Method:** Field name matching ONLY
+- `accountNumber`, `account_number`, `bankAccount`, `bank_account`, `iban`
+
+**Rationale:** Generic digit patterns caused too many false positives on order IDs, transaction IDs, etc.
+
+~~**Format:** 7-11 digits, sometimes with dashes~~
+
+~~**Content Pattern:**~~
+~~```regex~~
+~~\b\d{4}-\d{3}-\d{7,11}\b|\b\d{7,11}\b~~
+~~```~~
 
 **Examples:**
-- `1234-567-8901234` ✅
-- `12345678901` ✅
+- Field name `accountNumber` with any value ✅
+- Random 10-digit number in text ❌ (no longer detected)
 
 ---
 
@@ -246,6 +293,12 @@ Regional patterns are enabled based on the configured regions.
 - `YYMMDD`: Date of birth
 - `PB`: Place of birth code
 - `###`: Sequence number
+
+**Validation (v1.0+):** Date validation
+- **Month:** Must be 01-12
+- **Day:** Must be 01-31 (with month-specific limits)
+- **Example valid:** `901230-14-5678` (Dec 30, 1990)
+- **Example invalid:** `991340-14-5678` (month 13 doesn't exist)
 - `G`: Gender (odd=male, even=female)
 
 **Content Pattern:**

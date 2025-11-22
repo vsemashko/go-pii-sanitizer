@@ -125,3 +125,39 @@ func (c *Config) WithPartialMasking(maskChar rune, keepLeft, keepRight int) *Con
 	c.PartialKeepRight = keepRight
 	return c
 }
+
+// Validate checks if the configuration is valid
+// Returns an error if any configuration values are invalid
+func (c *Config) Validate() error {
+	if len(c.Regions) == 0 {
+		return &ConfigValidationError{Field: "Regions", Message: "at least one region must be enabled"}
+	}
+
+	if c.PartialKeepLeft < 0 {
+		return &ConfigValidationError{Field: "PartialKeepLeft", Message: "must be non-negative"}
+	}
+
+	if c.PartialKeepRight < 0 {
+		return &ConfigValidationError{Field: "PartialKeepRight", Message: "must be non-negative"}
+	}
+
+	if c.MaxDepth < 1 {
+		return &ConfigValidationError{Field: "MaxDepth", Message: "must be at least 1"}
+	}
+
+	if c.MaxDepth > 100 {
+		return &ConfigValidationError{Field: "MaxDepth", Message: "must be at most 100 to prevent stack overflow"}
+	}
+
+	return nil
+}
+
+// ConfigValidationError represents a configuration validation error
+type ConfigValidationError struct {
+	Field   string
+	Message string
+}
+
+func (e *ConfigValidationError) Error() string {
+	return "config validation error: " + e.Field + " - " + e.Message
+}

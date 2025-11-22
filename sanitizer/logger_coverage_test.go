@@ -18,13 +18,13 @@ func TestSlogNestedArrays(t *testing.T) {
 	var buf bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&buf, nil))
 
-	data := map[string]interface{}{
-		"users": []interface{}{
-			map[string]interface{}{
-				"emails": []interface{}{"user1@example.com", "user1-alt@example.com"},
+	data := map[string]any{
+		"users": []any{
+			map[string]any{
+				"emails": []any{"user1@example.com", "user1-alt@example.com"},
 			},
-			map[string]interface{}{
-				"emails": []interface{}{"user2@example.com"},
+			map[string]any{
+				"emails": []any{"user2@example.com"},
 			},
 		},
 		"orderId": "ORD-123",
@@ -48,16 +48,16 @@ func TestSlogMixedNestedTypes(t *testing.T) {
 	var buf bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&buf, nil))
 
-	data := map[string]interface{}{
-		"matrix": []interface{}{
-			[]interface{}{1, 2, 3},
-			[]interface{}{4, 5, 6},
+	data := map[string]any{
+		"matrix": []any{
+			[]any{1, 2, 3},
+			[]any{4, 5, 6},
 		},
-		"mixed": []interface{}{
+		"mixed": []any{
 			"text",
 			123,
 			true,
-			map[string]interface{}{"email": "test@example.com"},
+			map[string]any{"email": "test@example.com"},
 		},
 	}
 
@@ -76,16 +76,16 @@ func TestZapNestedArrays(t *testing.T) {
 	core, logs := observer.New(zapcore.InfoLevel)
 	logger := zap.New(core)
 
-	data := map[string]interface{}{
-		"users": []interface{}{
-			map[string]interface{}{
-				"tags": []interface{}{"premium", "verified"},
-				"emails": []interface{}{"user1@example.com"},
+	data := map[string]any{
+		"users": []any{
+			map[string]any{
+				"tags":   []any{"premium", "verified"},
+				"emails": []any{"user1@example.com"},
 			},
 		},
-		"matrix": []interface{}{
-			[]interface{}{1, 2},
-			[]interface{}{3, 4},
+		"matrix": []any{
+			[]any{1, 2},
+			[]any{3, 4},
 		},
 		"orderId": "ORD-123",
 	}
@@ -98,12 +98,12 @@ func TestZapNestedArrays(t *testing.T) {
 	}
 
 	output := entries[0].ContextMap()
-	dataMap := output["data"].(map[string]interface{})
+	dataMap := output["data"].(map[string]any)
 
 	// Verify nested emails are redacted
-	users := dataMap["users"].([]interface{})
-	user1 := users[0].(map[string]interface{})
-	emails := user1["emails"].([]interface{})
+	users := dataMap["users"].([]any)
+	user1 := users[0].(map[string]any)
+	emails := user1["emails"].([]any)
 	if emails[0] == "user1@example.com" {
 		t.Error("Expected nested email in array to be redacted")
 	}
@@ -121,14 +121,14 @@ func TestZerologNestedArrays(t *testing.T) {
 	var buf bytes.Buffer
 	logger := zerolog.New(&buf)
 
-	data := map[string]interface{}{
-		"matrix": []interface{}{
-			[]interface{}{1, 2, 3},
-			[]interface{}{map[string]interface{}{"value": "test"}},
+	data := map[string]any{
+		"matrix": []any{
+			[]any{1, 2, 3},
+			[]any{map[string]any{"value": "test"}},
 		},
-		"users": []interface{}{
-			map[string]interface{}{
-				"emails": []interface{}{"nested@example.com"},
+		"users": []any{
+			map[string]any{
+				"emails": []any{"nested@example.com"},
 			},
 		},
 	}
@@ -145,7 +145,7 @@ func TestZerologNestedArrays(t *testing.T) {
 func TestZerologDict(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"email":   "user@example.com",
 		"orderId": "ORD-123",
 	}
@@ -162,7 +162,7 @@ func TestZerologDict(t *testing.T) {
 func TestMatchesEdgeCases(t *testing.T) {
 	s := NewDefault()
 
-	tests := []struct{
+	tests := []struct {
 		name    string
 		content string
 		match   bool
@@ -179,7 +179,7 @@ func TestMatchesEdgeCases(t *testing.T) {
 		},
 		{
 			name:    "Multiple PIIs",
-			content: "Email: user1@example.com, Phone: +6591234567, NRIC: S1234567A",
+			content: "Email: user1@example.com, Phone: +6591234567, NRIC: S1234567D",
 			match:   true,
 		},
 		{
@@ -326,15 +326,15 @@ func TestSanitizeSliceEdgeCases(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		slice []interface{}
+		slice []any
 	}{
 		{
 			name:  "Empty slice",
-			slice: []interface{}{},
+			slice: []any{},
 		},
 		{
 			name: "Slice with nil",
-			slice: []interface{}{
+			slice: []any{
 				nil,
 				"value",
 				nil,
@@ -342,10 +342,10 @@ func TestSanitizeSliceEdgeCases(t *testing.T) {
 		},
 		{
 			name: "Deeply nested slices",
-			slice: []interface{}{
-				[]interface{}{
-					[]interface{}{
-						map[string]interface{}{
+			slice: []any{
+				[]any{
+					[]any{
+						map[string]any{
 							"email": "deep@example.com",
 						},
 					},
@@ -356,7 +356,7 @@ func TestSanitizeSliceEdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data := map[string]interface{}{
+			data := map[string]any{
 				"items": tt.slice,
 			}
 			result := s.SanitizeMap(data)

@@ -51,13 +51,13 @@ func TestContentMatchType(t *testing.T) {
 	}
 
 	// Test credit card pattern type detection
-	ccType := s.contentMatcher.matchType("4532-1234-5678-9010")
+	ccType := s.contentMatcher.matchType("4532015112830366")
 	if ccType != "credit_card" {
 		t.Errorf("Expected 'credit_card' type, got '%s'", ccType)
 	}
 
 	// Test Singapore NRIC type detection
-	nricType := s.contentMatcher.matchType("S1234567A")
+	nricType := s.contentMatcher.matchType("S1234567D")
 	if nricType != "singapore_nric" {
 		t.Errorf("Expected 'singapore_nric' type, got '%s'", nricType)
 	}
@@ -76,12 +76,12 @@ func TestSanitizeJSON(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected map[string]interface{}
+		expected map[string]any
 	}{
 		{
 			name:  "Simple JSON with PII",
 			input: `{"email":"user@example.com","orderId":"ORD-123"}`,
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"email":   "[REDACTED]",
 				"orderId": "ORD-123",
 			},
@@ -89,8 +89,8 @@ func TestSanitizeJSON(t *testing.T) {
 		{
 			name:  "Nested JSON",
 			input: `{"user":{"email":"user@example.com","name":"John Doe"},"orderId":"ORD-456"}`,
-			expected: map[string]interface{}{
-				"user": map[string]interface{}{
+			expected: map[string]any{
+				"user": map[string]any{
 					"email": "[REDACTED]",
 					"name":  "[REDACTED]",
 				},
@@ -100,8 +100,8 @@ func TestSanitizeJSON(t *testing.T) {
 		{
 			name:  "JSON with array",
 			input: `{"emails":["user1@example.com","user2@example.com"],"productId":"PROD-123"}`,
-			expected: map[string]interface{}{
-				"emails": []interface{}{
+			expected: map[string]any{
+				"emails": []any{
 					"[REDACTED]",
 					"[REDACTED]",
 				},
@@ -117,7 +117,7 @@ func TestSanitizeJSON(t *testing.T) {
 				t.Fatalf("SanitizeJSON failed: %v", err)
 			}
 
-			var result map[string]interface{}
+			var result map[string]any
 			if err := json.Unmarshal(output, &result); err != nil {
 				t.Fatalf("Failed to unmarshal result: %v", err)
 			}
@@ -197,7 +197,7 @@ func TestSanitizeStruct(t *testing.T) {
 	}
 
 	// Check nested struct
-	if addr, ok := result["address"].(map[string]interface{}); ok {
+	if addr, ok := result["address"].(map[string]any); ok {
 		if addr["street"] == "123 Main St" {
 			t.Error("Expected street to be redacted")
 		}
@@ -217,7 +217,7 @@ func TestSanitizeStruct(t *testing.T) {
 	}
 
 	// Check metadata map with PII
-	if metadata, ok := result["metadata"].(map[string]interface{}); ok {
+	if metadata, ok := result["metadata"].(map[string]any); ok {
 		if metadata["email"] == "another@example.com" {
 			t.Error("Expected nested email in metadata to be redacted")
 		}
@@ -265,18 +265,14 @@ func TestSanitizeStructPointer(t *testing.T) {
 func TestMatchesWithValidator(t *testing.T) {
 	s := NewDefault()
 
-	// Test IP address matching (has validator)
-	if !s.contentMatcher.matches("192.168.1.1") {
-		t.Error("Expected valid IP to match")
+	// Test credit card with Luhn validation
+	if !s.contentMatcher.matches("4532015112830366") {
+		t.Error("Expected valid credit card to match (passes Luhn)")
 	}
 
-	if !s.contentMatcher.matches("Text with IP 192.168.1.100 in it") {
-		t.Error("Expected IP in text to match")
-	}
-
-	// Test credit card (validator disabled but pattern should match)
-	if !s.contentMatcher.matches("4532-1234-5678-9010") {
-		t.Error("Expected credit card pattern to match")
+	// Test that invalid credit card does NOT match (fails Luhn)
+	if s.contentMatcher.matches("4532-1234-5678-0000") {
+		t.Error("Expected invalid credit card to NOT match (fails Luhn)")
 	}
 }
 
@@ -291,7 +287,7 @@ func TestRegionSpecificPatterns(t *testing.T) {
 		{
 			name:    "Singapore only - NRIC match",
 			regions: []Region{Singapore},
-			content: "S1234567A",
+			content: "S1234567D",
 			match:   true,
 		},
 		{

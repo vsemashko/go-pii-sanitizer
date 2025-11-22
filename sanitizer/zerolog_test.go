@@ -17,7 +17,7 @@ func TestZerologIntegration(t *testing.T) {
 	logger := zerolog.New(&buf)
 
 	// Test data with PII
-	user := map[string]interface{}{
+	user := map[string]any{
 		"email":    "user@example.com",
 		"fullName": "John Doe",
 		"orderId":  "ORD-123",
@@ -49,7 +49,7 @@ func TestZerologObject(t *testing.T) {
 	var buf bytes.Buffer
 	logger := zerolog.New(&buf)
 
-	user := map[string]interface{}{
+	user := map[string]any{
 		"email":   "user@example.com",
 		"orderId": "ORD-123",
 	}
@@ -92,16 +92,16 @@ func TestZerologNested(t *testing.T) {
 	var buf bytes.Buffer
 	logger := zerolog.New(&buf)
 
-	data := map[string]interface{}{
-		"user": map[string]interface{}{
+	data := map[string]any{
+		"user": map[string]any{
 			"email":    "user@example.com",
 			"fullName": "John Doe",
-			"address": map[string]interface{}{
+			"address": map[string]any{
 				"street":     "123 Main St",
 				"postalCode": "12345",
 			},
 		},
-		"order": map[string]interface{}{
+		"order": map[string]any{
 			"orderId": "ORD-123",
 			"amount":  99.99,
 		},
@@ -134,13 +134,13 @@ func TestZerologSlice(t *testing.T) {
 	var buf bytes.Buffer
 	logger := zerolog.New(&buf)
 
-	data := map[string]interface{}{
-		"users": []interface{}{
-			map[string]interface{}{
+	data := map[string]any{
+		"users": []any{
+			map[string]any{
 				"email":   "user1@example.com",
 				"orderId": "ORD-1",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"email":   "user2@example.com",
 				"orderId": "ORD-2",
 			},
@@ -207,7 +207,7 @@ func TestZerologMixedTypes(t *testing.T) {
 	var buf bytes.Buffer
 	logger := zerolog.New(&buf)
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"string":  "user@example.com",
 		"int":     12345,
 		"float":   99.99,
@@ -219,12 +219,12 @@ func TestZerologMixedTypes(t *testing.T) {
 	logger.Info().Object("data", s.ZerologObject(data)).Msg("test")
 
 	// Parse JSON to check values
-	var logEntry map[string]interface{}
+	var logEntry map[string]any
 	if err := json.Unmarshal(buf.Bytes(), &logEntry); err != nil {
 		t.Fatalf("Failed to parse log output: %v", err)
 	}
 
-	dataMap := logEntry["data"].(map[string]interface{})
+	dataMap := logEntry["data"].(map[string]any)
 
 	// String with PII should be redacted
 	if dataMap["string"] == "user@example.com" {
@@ -252,13 +252,13 @@ func TestZerologArrays(t *testing.T) {
 	var buf bytes.Buffer
 	logger := zerolog.New(&buf)
 
-	data := map[string]interface{}{
-		"emails": []interface{}{
+	data := map[string]any{
+		"emails": []any{
 			"user1@example.com",
 			"user2@example.com",
 			"not-an-email",
 		},
-		"numbers": []interface{}{
+		"numbers": []any{
 			1, 2, 3,
 		},
 	}
@@ -292,10 +292,10 @@ func TestZerologDeepNesting(t *testing.T) {
 	var buf bytes.Buffer
 	logger := zerolog.New(&buf)
 
-	data := map[string]interface{}{
-		"level1": map[string]interface{}{
-			"level2": map[string]interface{}{
-				"level3": map[string]interface{}{
+	data := map[string]any{
+		"level1": map[string]any{
+			"level2": map[string]any{
+				"level3": map[string]any{
 					"email":   "user@example.com",
 					"orderId": "ORD-123",
 				},
@@ -321,8 +321,8 @@ func TestZerologRegionalPatterns(t *testing.T) {
 	var buf bytes.Buffer
 	logger := zerolog.New(&buf)
 
-	data := map[string]interface{}{
-		"nric":  "S1234567A",
+	data := map[string]any{
+		"nric":  "S1234567D",
 		"mykad": "901230-14-5678",
 		"iban":  "AE07 0331 2345 6789 0123 456",
 	}
@@ -332,7 +332,7 @@ func TestZerologRegionalPatterns(t *testing.T) {
 	output := buf.String()
 
 	// All regional patterns should be redacted
-	if strings.Contains(output, "S1234567A") {
+	if strings.Contains(output, "S1234567D") {
 		t.Error("Expected Singapore NRIC to be redacted")
 	}
 	if strings.Contains(output, "901230-14-5678") {
@@ -352,8 +352,8 @@ func TestZerologPartialMasking(t *testing.T) {
 	var buf bytes.Buffer
 	logger := zerolog.New(&buf)
 
-	data := map[string]interface{}{
-		"creditCard": "4532-1234-5678-9010",
+	data := map[string]any{
+		"creditCard": "4532015112830366",
 	}
 
 	logger.Info().Object("data", s.ZerologObject(data)).Msg("partial")
@@ -361,10 +361,10 @@ func TestZerologPartialMasking(t *testing.T) {
 	output := buf.String()
 
 	// Should contain partial masking
-	if strings.Contains(output, "4532-1234-5678-9010") {
+	if strings.Contains(output, "4532015112830366") {
 		t.Error("Expected credit card to be partially masked")
 	}
-	if !strings.Contains(output, "9010") {
+	if !strings.Contains(output, "0366") {
 		t.Error("Expected last 4 digits to be visible")
 	}
 }
@@ -374,7 +374,7 @@ func BenchmarkZerologObject(b *testing.B) {
 	var buf bytes.Buffer
 	logger := zerolog.New(&buf)
 
-	user := map[string]interface{}{
+	user := map[string]any{
 		"email":    "user@example.com",
 		"fullName": "John Doe",
 		"orderId":  "ORD-123",

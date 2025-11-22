@@ -22,12 +22,9 @@ func getHongKongPatterns() RegionalPatterns {
 				// Phone: +852 followed by 8 digits (mobile: 5/6/9 prefix)
 				Pattern: regexp.MustCompile(`(?:\+852|852)?[5-9]\d{7}\b`),
 			},
-			{
-				Name: "hongkong_bank_account",
-				// Bank Account: 3-digit branch code + account number (total 9-12 digits)
-				// Format: BBB-AAAAAA or BBBAAAAAA
-				Pattern: regexp.MustCompile(`\b\d{3}-?\d{6,9}\b|\b\d{9,12}\b`),
-			},
+			// NOTE: Bank account content pattern removed to prevent false positives
+			// Pattern \b\d{9,12}\b would match order IDs, transaction IDs, timestamps, etc.
+			// Use field name matching only for bank accounts
 		},
 	}
 }

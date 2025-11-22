@@ -22,12 +22,9 @@ func getThailandPatterns() RegionalPatterns {
 				// Phone: +66 followed by 8-9 digits (mobile: 6/8/9 prefix)
 				Pattern: regexp.MustCompile(`(?:\+66|66|0)[689]\d{8}\b`),
 			},
-			{
-				Name: "thailand_bank_account",
-				// Bank Account: Usually 10 digits (format: 012-3-45678-9)
-				// Format varies by bank, but 10 digits is standard
-				Pattern: regexp.MustCompile(`\b\d{3}-?\d-?\d{5}-?\d\b|\b\d{10,12}\b`),
-			},
+			// NOTE: Bank account content pattern removed to prevent false positives
+			// Pattern \b\d{10,12}\b would match timestamps, order IDs, product codes, etc.
+			// Use field name matching only for bank accounts
 		},
 	}
 }

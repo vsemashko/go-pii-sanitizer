@@ -27,29 +27,29 @@ func TestSlogLogValue_ComplexTypes(t *testing.T) {
 	s := NewDefault()
 
 	testCases := []struct {
-		name  string
-		data  map[string]interface{}
+		name string
+		data map[string]any
 	}{
 		{
 			name: "With channel (unsupported type)",
-			data: map[string]interface{}{
+			data: map[string]any{
 				"channel": make(chan int),
 				"email":   "user@example.com",
 			},
 		},
 		{
 			name: "With function",
-			data: map[string]interface{}{
+			data: map[string]any{
 				"func": func() {},
 				"name": "John Doe",
 			},
 		},
 		{
 			name: "With complex nested",
-			data: map[string]interface{}{
-				"level1": map[string]interface{}{
-					"level2": []interface{}{
-						map[string]interface{}{"email": "test@example.com"},
+			data: map[string]any{
+				"level1": map[string]any{
+					"level2": []any{
+						map[string]any{"email": "test@example.com"},
 					},
 				},
 			},
@@ -75,9 +75,9 @@ func TestSanitizeFieldWithTag_AllBranches(t *testing.T) {
 	s := NewDefault()
 
 	type TestStruct struct {
-		BoolField   bool   `pii:"redact"`
-		FloatField  float64 `pii:"redact"`
-		SliceField  []string `pii:"redact"`
+		BoolField   bool              `pii:"redact"`
+		FloatField  float64           `pii:"redact"`
+		SliceField  []string          `pii:"redact"`
 		MapField    map[string]string `pii:"redact"`
 		StructField struct {
 			Inner string
@@ -120,32 +120,32 @@ func TestZapMarshaler_SpecialTypes(t *testing.T) {
 
 	testCases := []struct {
 		name string
-		data map[string]interface{}
+		data map[string]any
 	}{
 		{
 			name: "With error type",
-			data: map[string]interface{}{
+			data: map[string]any{
 				"error": &testError{msg: "test error"},
 				"email": "user@example.com",
 			},
 		},
 		{
 			name: "With stringer",
-			data: map[string]interface{}{
+			data: map[string]any{
 				"stringer": &testStringer{value: "test"},
 				"phone":    "+6591234567",
 			},
 		},
 		{
 			name: "Empty nested maps",
-			data: map[string]interface{}{
-				"nested": map[string]interface{}{},
+			data: map[string]any{
+				"nested": map[string]any{},
 			},
 		},
 		{
 			name: "Empty nested slices",
-			data: map[string]interface{}{
-				"items": []interface{}{},
+			data: map[string]any{
+				"items": []any{},
 			},
 		},
 	}
@@ -173,18 +173,18 @@ func TestZerologMarshaler_SpecialTypes(t *testing.T) {
 
 	testCases := []struct {
 		name string
-		data map[string]interface{}
+		data map[string]any
 	}{
 		{
 			name: "With binary data",
-			data: map[string]interface{}{
+			data: map[string]any{
 				"binary": []byte{0x01, 0x02, 0x03},
 				"email":  "user@example.com",
 			},
 		},
 		{
 			name: "With time value",
-			data: map[string]interface{}{
+			data: map[string]any{
 				"name": "John Doe",
 			},
 		},
@@ -211,9 +211,9 @@ func TestSanitizeSlice_MaxDepth(t *testing.T) {
 	s := New(config)
 
 	// Deeply nested slice
-	deepSlice := []interface{}{
-		[]interface{}{
-			[]interface{}{"deep"},
+	deepSlice := []any{
+		[]any{
+			[]any{"deep"},
 		},
 	}
 
@@ -266,8 +266,8 @@ func TestCompilePatterns_AllRegions(t *testing.T) {
 
 	// Test that patterns from all regions work
 	tests := []struct {
-		field   string
-		value   string
+		field    string
+		value    string
 		redacted bool
 	}{
 		{"nric", "S1234567D", true},
@@ -291,7 +291,7 @@ func TestCompilePatterns_AllRegions(t *testing.T) {
 func TestZapMarshalMap_AllFieldTypes(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"string":  "test",
 		"int":     42,
 		"int8":    int8(8),
@@ -309,8 +309,8 @@ func TestZapMarshalMap_AllFieldTypes(t *testing.T) {
 		"bytes":   []byte("test"),
 		"error":   &testError{msg: "err"},
 		"nil":     nil,
-		"slice":   []interface{}{1, 2, 3},
-		"map": map[string]interface{}{
+		"slice":   []any{1, 2, 3},
+		"map": map[string]any{
 			"nested": "value",
 		},
 	}
@@ -332,15 +332,15 @@ func TestZapMarshalMap_AllFieldTypes(t *testing.T) {
 func TestZerologAddField_AllTypes(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"string":  "test",
 		"int":     42,
 		"float":   3.14,
 		"bool":    true,
 		"bytes":   []byte("test"),
 		"nil":     nil,
-		"slice":   []interface{}{1, 2},
-		"map":     map[string]interface{}{"key": "value"},
+		"slice":   []any{1, 2},
+		"map":     map[string]any{"key": "value"},
 		"channel": make(chan int), // Unsupported type
 	}
 

@@ -36,7 +36,7 @@ func BenchmarkSanitizeField_ContentMatch(b *testing.B) {
 
 func BenchmarkSanitizeMap_Small(b *testing.B) {
 	s := NewDefault()
-	data := map[string]interface{}{
+	data := map[string]any{
 		"orderId": "ORD-123",
 		"email":   "user@example.com",
 		"amount":  100.50,
@@ -50,13 +50,13 @@ func BenchmarkSanitizeMap_Small(b *testing.B) {
 
 func BenchmarkSanitizeMap_Nested(b *testing.B) {
 	s := NewDefault()
-	data := map[string]interface{}{
-		"user": map[string]interface{}{
+	data := map[string]any{
+		"user": map[string]any{
 			"fullName": "John Doe",
 			"email":    "john@example.com",
 			"phone":    "+6591234567",
 		},
-		"order": map[string]interface{}{
+		"order": map[string]any{
 			"orderId": "ORD-123",
 			"amount":  99.99,
 		},
@@ -70,10 +70,10 @@ func BenchmarkSanitizeMap_Nested(b *testing.B) {
 
 func BenchmarkSanitizeMap_Deep(b *testing.B) {
 	s := NewDefault()
-	data := map[string]interface{}{
-		"level1": map[string]interface{}{
-			"level2": map[string]interface{}{
-				"level3": map[string]interface{}{
+	data := map[string]any{
+		"level1": map[string]any{
+			"level2": map[string]any{
+				"level3": map[string]any{
 					"email":   "user@example.com",
 					"orderId": "ORD-123",
 				},
@@ -124,7 +124,7 @@ func BenchmarkPartialMasking(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		s.SanitizeField("creditCard", "4532-1234-5678-9010")
+		s.SanitizeField("creditCard", "4532015112830366")
 	}
 }
 
@@ -140,7 +140,7 @@ func BenchmarkHashStrategy(b *testing.B) {
 // Benchmark region-specific patterns
 func BenchmarkSingaporeNRIC(b *testing.B) {
 	s := NewForRegion(Singapore)
-	text := "My NRIC is S1234567A"
+	text := "My NRIC is S1234567D"
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {

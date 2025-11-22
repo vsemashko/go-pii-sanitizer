@@ -23,28 +23,28 @@ func TestContentMatcher_WithValidator(t *testing.T) {
 	s := New(config)
 
 	tests := []struct {
-		name          string
-		content       string
-		shouldMatch   bool
-		shouldRedact  bool
+		name         string
+		content      string
+		shouldMatch  bool
+		shouldRedact bool
 	}{
 		{
-			name:          "Valid pattern with passing validator",
-			content:       "Call me at 555-123-4567",
-			shouldMatch:   true,
-			shouldRedact:  true,
+			name:         "Valid pattern with passing validator",
+			content:      "Call me at 555-123-4567",
+			shouldMatch:  true,
+			shouldRedact: true,
 		},
 		{
-			name:          "Valid pattern with failing validator",
-			content:       "Call me at 123-456-7890",
-			shouldMatch:   false,
-			shouldRedact:  false,
+			name:         "Valid pattern with failing validator",
+			content:      "Call me at 123-456-7890",
+			shouldMatch:  false,
+			shouldRedact: false,
 		},
 		{
-			name:          "Multiple matches, only one passes validator",
-			content:       "Numbers: 123-456-7890 and 555-999-8888",
-			shouldMatch:   true,
-			shouldRedact:  true,
+			name:         "Multiple matches, only one passes validator",
+			content:      "Numbers: 123-456-7890 and 555-999-8888",
+			shouldMatch:  true,
+			shouldRedact: true,
 		},
 	}
 
@@ -181,7 +181,7 @@ func TestFieldMatcher_EdgeCases(t *testing.T) {
 		{"Very long field name", "this_is_a_very_long_field_name_that_should_not_match_anything", ""},
 		{"Special characters", "field@name#123", ""},
 		{"Numbers only", "12345", ""},
-		{"Underscore variations", "user__email", ""}, // Doesn't match exact pattern
+		{"Underscore variations", "user__email", ""},    // Doesn't match exact pattern
 		{"CamelCase variation", "userEmailAddress", ""}, // Doesn't match exact pattern
 		{"Mixed case", "EmAiL", "email"},
 	}
@@ -196,20 +196,9 @@ func TestFieldMatcher_EdgeCases(t *testing.T) {
 	}
 }
 
-func TestContentMatcher_NoPatterns(t *testing.T) {
-	// Create sanitizer with no content patterns
-	config := NewDefaultConfig()
-	config.Regions = []Region{} // No regions = no regional patterns
-	s := New(config)
-
-	// Should still have common patterns, but test with content that won't match
-	result := s.SanitizeField("field", "random text 12345")
-
-	// Should be preserved since no patterns match
-	if result == "[REDACTED]" {
-		t.Error("Expected content to be preserved when no patterns match")
-	}
-}
+// TestContentMatcher_NoPatterns removed - Empty regions now causes validation error
+// Config validation ensures at least one region must be enabled
+// This is intentional to prevent misconfiguration
 
 func TestFieldMatcher_WithCustomPatterns(t *testing.T) {
 	config := NewDefaultConfig()

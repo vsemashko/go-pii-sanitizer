@@ -8,15 +8,15 @@ import (
 // Implements zerolog.LogObjectMarshaler
 type ZerologObject struct {
 	sanitizer *Sanitizer
-	data      interface{}
+	data      any
 }
 
 // MarshalZerologObject implements zerolog.LogObjectMarshaler
 func (z ZerologObject) MarshalZerologObject(e *zerolog.Event) {
-	var m map[string]interface{}
+	var m map[string]any
 
 	switch val := z.data.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		m = z.sanitizer.SanitizeMap(val)
 	default:
 		m = z.sanitizer.SanitizeStruct(val)
@@ -26,14 +26,14 @@ func (z ZerologObject) MarshalZerologObject(e *zerolog.Event) {
 }
 
 // marshalZerologMap marshals a map into zerolog event
-func marshalZerologMap(e *zerolog.Event, m map[string]interface{}) {
+func marshalZerologMap(e *zerolog.Event, m map[string]any) {
 	for k, v := range m {
 		addZerologField(e, k, v)
 	}
 }
 
 // addZerologField adds a field to the event with appropriate type handling
-func addZerologField(e *zerolog.Event, key string, value interface{}) {
+func addZerologField(e *zerolog.Event, key string, value any) {
 	switch val := value.(type) {
 	case string:
 		e.Str(key, val)
@@ -45,9 +45,9 @@ func addZerologField(e *zerolog.Event, key string, value interface{}) {
 		e.Float64(key, val)
 	case bool:
 		e.Bool(key, val)
-	case map[string]interface{}:
+	case map[string]any:
 		e.Object(key, zerologMapMarshaler{m: val})
-	case []interface{}:
+	case []any:
 		e.Array(key, zerologSliceMarshaler{slice: val})
 	case nil:
 		e.Interface(key, nil)
@@ -59,7 +59,7 @@ func addZerologField(e *zerolog.Event, key string, value interface{}) {
 
 // zerologMapMarshaler wraps a map for zerolog object marshaling
 type zerologMapMarshaler struct {
-	m map[string]interface{}
+	m map[string]any
 }
 
 func (zm zerologMapMarshaler) MarshalZerologObject(e *zerolog.Event) {
@@ -68,7 +68,7 @@ func (zm zerologMapMarshaler) MarshalZerologObject(e *zerolog.Event) {
 
 // zerologSliceMarshaler wraps a slice for zerolog array marshaling
 type zerologSliceMarshaler struct {
-	slice []interface{}
+	slice []any
 }
 
 func (zs zerologSliceMarshaler) MarshalZerologArray(a *zerolog.Array) {
@@ -84,9 +84,9 @@ func (zs zerologSliceMarshaler) MarshalZerologArray(a *zerolog.Array) {
 			a.Float64(val)
 		case bool:
 			a.Bool(val)
-		case map[string]interface{}:
+		case map[string]any:
 			a.Object(zerologMapMarshaler{m: val})
-		case []interface{}:
+		case []any:
 			// Nested arrays - use interface for simplicity
 			a.Interface(val)
 		default:
@@ -96,7 +96,7 @@ func (zs zerologSliceMarshaler) MarshalZerologArray(a *zerolog.Array) {
 }
 
 // ZerologObject creates a ZerologObject for use in zerolog logging
-func (s *Sanitizer) ZerologObject(value interface{}) ZerologObject {
+func (s *Sanitizer) ZerologObject(value any) ZerologObject {
 	return ZerologObject{sanitizer: s, data: value}
 }
 
@@ -107,6 +107,6 @@ func (s *Sanitizer) ZerologString(key, value string) (string, string) {
 }
 
 // ZerologDict creates a sanitized zerolog dict event
-func (s *Sanitizer) ZerologDict(value interface{}) *zerolog.Event {
+func (s *Sanitizer) ZerologDict(value any) *zerolog.Event {
 	return zerolog.Dict().Object("", s.ZerologObject(value))
 }

@@ -121,7 +121,7 @@ func TestSanitizeStructWithTags_NestedStructs(t *testing.T) {
 	}
 
 	// Nested struct
-	addr, ok := result["address"].(map[string]interface{})
+	addr, ok := result["address"].(map[string]any)
 	if !ok {
 		t.Fatal("Expected address to be a map")
 	}
@@ -159,7 +159,7 @@ func TestSanitizeStructWithTags_Slices(t *testing.T) {
 	}
 
 	// Slices with pii:"preserve"
-	tags, ok := result["tags"].([]interface{})
+	tags, ok := result["tags"].([]any)
 	if !ok {
 		t.Fatal("Expected tags to be a slice")
 	}
@@ -189,7 +189,7 @@ func TestSanitizeStructWithTags_Maps(t *testing.T) {
 	result := s.SanitizeStructWithTags(user)
 
 	// Map with pii:"preserve" - preserve but still sanitize contents based on patterns
-	metadata, ok := result["metadata"].(map[string]interface{})
+	metadata, ok := result["metadata"].(map[string]any)
 	if !ok {
 		t.Fatal("Expected metadata to be a map")
 	}
@@ -211,11 +211,11 @@ func TestSanitizeStructWithTags_MixedTypes(t *testing.T) {
 	s := NewDefault()
 
 	type User struct {
-		Email    string  `json:"email" pii:"redact"`
-		Active   bool    `json:"active"`
-		Balance  float64 `json:"balance" pii:"preserve"`
-		Count    int     `json:"count"`
-		OrderID  string  `json:"orderId" pii:"preserve"`
+		Email   string  `json:"email" pii:"redact"`
+		Active  bool    `json:"active"`
+		Balance float64 `json:"balance" pii:"preserve"`
+		Count   int     `json:"count"`
+		OrderID string  `json:"orderId" pii:"preserve"`
 	}
 
 	user := User{
@@ -417,7 +417,7 @@ func TestSanitizeStructWithTags_DeepNesting(t *testing.T) {
 	}
 
 	// Level 2
-	level2, ok := result["level2"].(map[string]interface{})
+	level2, ok := result["level2"].(map[string]any)
 	if !ok {
 		t.Fatal("Expected level2 to be a map")
 	}
@@ -426,7 +426,7 @@ func TestSanitizeStructWithTags_DeepNesting(t *testing.T) {
 	}
 
 	// Level 3
-	level3, ok := level2["level3"].(map[string]interface{})
+	level3, ok := level2["level3"].(map[string]any)
 	if !ok {
 		t.Fatal("Expected level3 to be a map")
 	}
@@ -447,7 +447,7 @@ func TestSanitizeStructWithTags_WithExplicitConfig(t *testing.T) {
 	s := New(config)
 
 	type User struct {
-		Email       string `json:"email"` // No tag, but in config preserve list
+		Email       string `json:"email"`                      // No tag, but in config preserve list
 		CustomField string `json:"customField" pii:"preserve"` // Tag preserve overrides config redact
 		FullName    string `json:"fullName" pii:"redact"`
 	}

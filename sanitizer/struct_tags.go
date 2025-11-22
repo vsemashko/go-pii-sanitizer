@@ -64,9 +64,9 @@ func parsePIITag(tag string) *piiTag {
 //
 //	s := NewDefault()
 //	result := s.SanitizeStructWithTags(user)
-func (s *Sanitizer) SanitizeStructWithTags(v interface{}) map[string]interface{} {
+func (s *Sanitizer) SanitizeStructWithTags(v any) map[string]any {
 	if v == nil {
-		return make(map[string]interface{})
+		return make(map[string]any)
 	}
 
 	// Get reflect value
@@ -75,7 +75,7 @@ func (s *Sanitizer) SanitizeStructWithTags(v interface{}) map[string]interface{}
 	// Handle pointers
 	if val.Kind() == reflect.Ptr {
 		if val.IsNil() {
-			return make(map[string]interface{})
+			return make(map[string]any)
 		}
 		val = val.Elem()
 	}
@@ -90,12 +90,12 @@ func (s *Sanitizer) SanitizeStructWithTags(v interface{}) map[string]interface{}
 }
 
 // sanitizeStructValue recursively sanitizes a struct value respecting tags
-func (s *Sanitizer) sanitizeStructValue(val reflect.Value, depth int) map[string]interface{} {
+func (s *Sanitizer) sanitizeStructValue(val reflect.Value, depth int) map[string]any {
 	if depth > s.config.MaxDepth {
-		return make(map[string]interface{})
+		return make(map[string]any)
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	typ := val.Type()
 
 	for i := 0; i < val.NumField(); i++ {
@@ -130,7 +130,7 @@ func (s *Sanitizer) sanitizeStructValue(val reflect.Value, depth int) map[string
 }
 
 // sanitizeFieldWithTag sanitizes a single field value respecting its PII tag
-func (s *Sanitizer) sanitizeFieldWithTag(fieldName string, field reflect.Value, tag *piiTag, depth int) interface{} {
+func (s *Sanitizer) sanitizeFieldWithTag(fieldName string, field reflect.Value, tag *piiTag, depth int) any {
 	// Get the actual value
 	fieldValue := field.Interface()
 
@@ -183,7 +183,7 @@ func (s *Sanitizer) sanitizeFieldWithTag(fieldName string, field reflect.Value, 
 }
 
 // convertValue converts a value for output (respecting preserve tag)
-func (s *Sanitizer) convertValue(v interface{}, depth int) interface{} {
+func (s *Sanitizer) convertValue(v any, depth int) any {
 	if v == nil {
 		return nil
 	}
@@ -212,16 +212,16 @@ func (s *Sanitizer) convertValue(v interface{}, depth int) interface{} {
 }
 
 // sanitizeMapValue sanitizes a map value
-func (s *Sanitizer) sanitizeMapValue(val reflect.Value, depth int) interface{} {
+func (s *Sanitizer) sanitizeMapValue(val reflect.Value, depth int) any {
 	if depth > s.config.MaxDepth {
-		return make(map[string]interface{})
+		return make(map[string]any)
 	}
 
 	if val.Kind() != reflect.Map {
 		return val.Interface()
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	iter := val.MapRange()
 
 	for iter.Next() {
@@ -244,13 +244,13 @@ func (s *Sanitizer) sanitizeMapValue(val reflect.Value, depth int) interface{} {
 }
 
 // sanitizeSliceValue sanitizes a slice/array value
-func (s *Sanitizer) sanitizeSliceValue(val reflect.Value, depth int) interface{} {
+func (s *Sanitizer) sanitizeSliceValue(val reflect.Value, depth int) any {
 	if depth > s.config.MaxDepth {
-		return []interface{}{}
+		return []any{}
 	}
 
 	length := val.Len()
-	result := make([]interface{}, length)
+	result := make([]any, length)
 
 	for i := 0; i < length; i++ {
 		item := val.Index(i)
@@ -261,7 +261,7 @@ func (s *Sanitizer) sanitizeSliceValue(val reflect.Value, depth int) interface{}
 }
 
 // sanitizeValueRecursive recursively sanitizes a value
-func (s *Sanitizer) sanitizeValueRecursive(fieldName string, v interface{}, depth int) interface{} {
+func (s *Sanitizer) sanitizeValueRecursive(fieldName string, v any, depth int) any {
 	if v == nil {
 		return nil
 	}

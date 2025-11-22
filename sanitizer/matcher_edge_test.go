@@ -23,28 +23,28 @@ func TestContentMatcher_WithValidator(t *testing.T) {
 	s := New(config)
 
 	tests := []struct {
-		name          string
-		content       string
-		shouldMatch   bool
-		shouldRedact  bool
+		name         string
+		content      string
+		shouldMatch  bool
+		shouldRedact bool
 	}{
 		{
-			name:          "Valid pattern with passing validator",
-			content:       "Call me at 555-123-4567",
-			shouldMatch:   true,
-			shouldRedact:  true,
+			name:         "Valid pattern with passing validator",
+			content:      "Call me at 555-123-4567",
+			shouldMatch:  true,
+			shouldRedact: true,
 		},
 		{
-			name:          "Valid pattern with failing validator",
-			content:       "Call me at 123-456-7890",
-			shouldMatch:   false,
-			shouldRedact:  false,
+			name:         "Valid pattern with failing validator",
+			content:      "Call me at 123-456-7890",
+			shouldMatch:  false,
+			shouldRedact: false,
 		},
 		{
-			name:          "Multiple matches, only one passes validator",
-			content:       "Numbers: 123-456-7890 and 555-999-8888",
-			shouldMatch:   true,
-			shouldRedact:  true,
+			name:         "Multiple matches, only one passes validator",
+			content:      "Numbers: 123-456-7890 and 555-999-8888",
+			shouldMatch:  true,
+			shouldRedact: true,
 		},
 	}
 
@@ -181,7 +181,7 @@ func TestFieldMatcher_EdgeCases(t *testing.T) {
 		{"Very long field name", "this_is_a_very_long_field_name_that_should_not_match_anything", ""},
 		{"Special characters", "field@name#123", ""},
 		{"Numbers only", "12345", ""},
-		{"Underscore variations", "user__email", ""}, // Doesn't match exact pattern
+		{"Underscore variations", "user__email", ""},    // Doesn't match exact pattern
 		{"CamelCase variation", "userEmailAddress", ""}, // Doesn't match exact pattern
 		{"Mixed case", "EmAiL", "email"},
 	}

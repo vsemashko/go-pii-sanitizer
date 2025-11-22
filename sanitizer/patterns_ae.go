@@ -27,8 +27,10 @@ func getUAEPatterns() RegionalPatterns {
 				Name: "uae_iban",
 				// IBAN: AE + 2 check digits + 19 digits (23 chars total)
 				// Format: AE07 0331 2345 6789 0123 456
+				// This pattern is specific enough to avoid false positives
 				Pattern: regexp.MustCompile(`\bAE\d{2}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{3}\b`),
 			},
+			// NOTE: Generic bank account patterns omitted - use field name matching only
 		},
 	}
 }

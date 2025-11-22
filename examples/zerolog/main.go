@@ -17,7 +17,7 @@ func main() {
 
 	// Example 1: Sanitize a map with PII
 	logger.Info().Msg("=== Example 1: User Data ===")
-	userData := map[string]interface{}{
+	userData := map[string]any{
 		"fullName": "John Doe",
 		"email":    "john.doe@example.com",
 		"phone":    "+6591234567",
@@ -29,14 +29,14 @@ func main() {
 
 	// Example 2: Sanitize nested data
 	logger.Info().Msg("=== Example 2: Nested Transaction Data ===")
-	transaction := map[string]interface{}{
+	transaction := map[string]any{
 		"transactionId": "TXN-789",
-		"user": map[string]interface{}{
+		"user": map[string]any{
 			"fullName":      "Jane Smith",
 			"email":         "jane@example.com",
 			"accountNumber": "1234567890",
 		},
-		"payment": map[string]interface{}{
+		"payment": map[string]any{
 			"amount":   99.99,
 			"currency": "SGD",
 			"memo":     "Payment for services to Jane Smith",
@@ -56,11 +56,11 @@ func main() {
 
 	// Example 4: Multiple sanitized objects
 	logger.Info().Msg("=== Example 4: Multiple Objects ===")
-	customer := map[string]interface{}{
+	customer := map[string]any{
 		"fullName": "Bob Johnson",
 		"email":    "bob@example.com",
 	}
-	order := map[string]interface{}{
+	order := map[string]any{
 		"orderId": "ORD-999",
 		"amount":  250.00,
 	}
@@ -71,25 +71,25 @@ func main() {
 
 	// Example 5: Regional patterns
 	logger.Info().Msg("=== Example 5: Regional PII Patterns ===")
-	regionalData := map[string]interface{}{
-		"singapore_nric":   "S1234567A",
-		"malaysia_mykad":   "901230-14-5678",
-		"uae_emirates_id":  "784-2020-1234567-1",
-		"thailand_id":      "1-2345-67890-12-3",
-		"hongkong_hkid":    "A123456(7)",
-		"safe_product_id":  "PROD-12345",
+	regionalData := map[string]any{
+		"singapore_nric":  "S1234567A",
+		"malaysia_mykad":  "901230-14-5678",
+		"uae_emirates_id": "784-2020-1234567-1",
+		"thailand_id":     "1-2345-67890-12-3",
+		"hongkong_hkid":   "A123456(7)",
+		"safe_product_id": "PROD-12345",
 	}
 	logger.Info().Object("data", s.ZerologObject(regionalData)).Msg("Regional data")
 
 	// Example 6: Slices and arrays
 	logger.Info().Msg("=== Example 6: Slices of Data ===")
-	users := map[string]interface{}{
-		"users": []interface{}{
-			map[string]interface{}{
+	users := map[string]any{
+		"users": []any{
+			map[string]any{
 				"email":   "user1@example.com",
 				"orderId": "ORD-1",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"email":   "user2@example.com",
 				"orderId": "ORD-2",
 			},
@@ -105,7 +105,7 @@ func main() {
 			WithPreserve("orderId", "productId"),
 	)
 
-	logData := map[string]interface{}{
+	logData := map[string]any{
 		"orderId":     "ORD-123",
 		"productId":   "PROD-456",
 		"description": "Payment to merchant ABC",
@@ -128,7 +128,7 @@ func main() {
 			),
 	)
 
-	uiData := map[string]interface{}{
+	uiData := map[string]any{
 		"orderId":       "ORD-123",
 		"transactionId": "TXN-456",
 		"fullName":      "Alice Wong",
@@ -146,7 +146,7 @@ func main() {
 			WithPartialMasking('*', 0, 4),
 	)
 
-	partialData := map[string]interface{}{
+	partialData := map[string]any{
 		"email":      "john.doe@example.com",
 		"creditCard": "4532-1234-5678-9010",
 		"orderId":    "ORD-789",
@@ -160,7 +160,7 @@ func main() {
 			WithStrategy(sanitizer.StrategyHash),
 	)
 
-	hashData := map[string]interface{}{
+	hashData := map[string]any{
 		"email":   "user@example.com",
 		"orderId": "ORD-123",
 	}
@@ -170,7 +170,7 @@ func main() {
 	logger.Info().Msg("=== Example 11: Pretty Console Output ===")
 	prettyLogger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).With().Timestamp().Logger()
 
-	prettyData := map[string]interface{}{
+	prettyData := map[string]any{
 		"email":   "john@example.com",
 		"name":    "John Doe",
 		"orderId": "ORD-555",

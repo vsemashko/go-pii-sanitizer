@@ -82,22 +82,16 @@ func getCommonContentPatterns() []ContentPattern {
 			Pattern: regexp.MustCompile(`\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b`),
 		},
 		{
-			Name: "credit_card",
-			// Credit card: 13-19 digits, optional spaces/dashes
-			// Note: Luhn validation disabled for now to reduce false negatives
-			// Can be re-enabled by uncommenting: Validator: validateLuhn
+			Name:    "credit_card",
 			Pattern: regexp.MustCompile(`\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{0,3}\b`),
+			// Luhn validation enabled to reduce false positives on order numbers, tracking codes, etc.
+			// Only matches valid credit card numbers (Visa, Mastercard, Amex, Discover, etc.)
+			Validator: validateLuhn,
 		},
-		{
-			Name: "ipv4",
-			// IPv4
-			Pattern: regexp.MustCompile(`\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b`),
-		},
-		{
-			Name: "ipv6",
-			// IPv6 (simplified)
-			Pattern: regexp.MustCompile(`(?i)\b(?:[0-9a-f]{1,4}:){7}[0-9a-f]{1,4}\b`),
-		},
+		// NOTE: IPv4/IPv6 patterns removed from default PII detection
+		// IP addresses are rarely considered PII under GDPR/PDPA
+		// They often cause false positives on version numbers (1.2.3.4), configuration, etc.
+		// If you need IP detection, add custom patterns via config.CustomContentPatterns
 	}
 }
 

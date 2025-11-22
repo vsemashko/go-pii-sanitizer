@@ -8,15 +8,15 @@ import (
 // Implements zapcore.ObjectMarshaler
 type ZapObject struct {
 	sanitizer *Sanitizer
-	data      interface{}
+	data      any
 }
 
 // MarshalLogObject implements zapcore.ObjectMarshaler
 func (z ZapObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	var m map[string]interface{}
+	var m map[string]any
 
 	switch val := z.data.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		m = z.sanitizer.SanitizeMap(val)
 	default:
 		m = z.sanitizer.SanitizeStruct(val)
@@ -26,7 +26,7 @@ func (z ZapObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 }
 
 // marshalMap recursively marshals a map into the zap encoder
-func marshalMap(enc zapcore.ObjectEncoder, m map[string]interface{}) error {
+func marshalMap(enc zapcore.ObjectEncoder, m map[string]any) error {
 	for k, v := range m {
 		if err := addField(enc, k, v); err != nil {
 			return err
@@ -36,7 +36,7 @@ func marshalMap(enc zapcore.ObjectEncoder, m map[string]interface{}) error {
 }
 
 // addField adds a field to the encoder with appropriate type handling
-func addField(enc zapcore.ObjectEncoder, key string, value interface{}) error {
+func addField(enc zapcore.ObjectEncoder, key string, value any) error {
 	switch val := value.(type) {
 	case string:
 		enc.AddString(key, val)
@@ -48,11 +48,11 @@ func addField(enc zapcore.ObjectEncoder, key string, value interface{}) error {
 		enc.AddFloat64(key, val)
 	case bool:
 		enc.AddBool(key, val)
-	case map[string]interface{}:
+	case map[string]any:
 		return enc.AddObject(key, zapcore.ObjectMarshalerFunc(func(innerEnc zapcore.ObjectEncoder) error {
 			return marshalMap(innerEnc, val)
 		}))
-	case []interface{}:
+	case []any:
 		return enc.AddArray(key, zapcore.ArrayMarshalerFunc(func(arrEnc zapcore.ArrayEncoder) error {
 			return marshalSlice(arrEnc, val)
 		}))
@@ -66,7 +66,7 @@ func addField(enc zapcore.ObjectEncoder, key string, value interface{}) error {
 }
 
 // marshalSlice marshals a slice into the zap array encoder
-func marshalSlice(enc zapcore.ArrayEncoder, slice []interface{}) error {
+func marshalSlice(enc zapcore.ArrayEncoder, slice []any) error {
 	for _, v := range slice {
 		switch val := v.(type) {
 		case string:
@@ -79,13 +79,13 @@ func marshalSlice(enc zapcore.ArrayEncoder, slice []interface{}) error {
 			enc.AppendFloat64(val)
 		case bool:
 			enc.AppendBool(val)
-		case map[string]interface{}:
+		case map[string]any:
 			if err := enc.AppendObject(zapcore.ObjectMarshalerFunc(func(objEnc zapcore.ObjectEncoder) error {
 				return marshalMap(objEnc, val)
 			})); err != nil {
 				return err
 			}
-		case []interface{}:
+		case []any:
 			if err := enc.AppendArray(zapcore.ArrayMarshalerFunc(func(arrEnc zapcore.ArrayEncoder) error {
 				return marshalSlice(arrEnc, val)
 			})); err != nil {
@@ -99,7 +99,7 @@ func marshalSlice(enc zapcore.ArrayEncoder, slice []interface{}) error {
 }
 
 // ZapObject creates a ZapObject for use in zap logging
-func (s *Sanitizer) ZapObject(value interface{}) ZapObject {
+func (s *Sanitizer) ZapObject(value any) ZapObject {
 	return ZapObject{sanitizer: s, data: value}
 }
 
@@ -114,7 +114,7 @@ func (s *Sanitizer) ZapString(key, value string) zapcore.Field {
 }
 
 // ZapField creates a sanitized zap field from any value
-func (s *Sanitizer) ZapField(key string, value interface{}) zapcore.Field {
+func (s *Sanitizer) ZapField(key string, value any) zapcore.Field {
 	return zapcore.Field{
 		Key:       key,
 		Type:      zapcore.ObjectMarshalerType,

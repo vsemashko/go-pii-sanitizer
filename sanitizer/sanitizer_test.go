@@ -246,12 +246,12 @@ func TestExplicitLists(t *testing.T) {
 func TestSanitizeMap(t *testing.T) {
 	s := NewForRegion(Singapore)
 
-	input := map[string]interface{}{
+	input := map[string]any{
 		"orderId": "ORD-123",
 		"email":   "user@example.com",
 		"nric":    "S1234567A",
 		"amount":  100.50,
-		"user": map[string]interface{}{
+		"user": map[string]any{
 			"fullName": "John Doe",
 			"phone":    "+6591234567",
 		},
@@ -280,7 +280,7 @@ func TestSanitizeMap(t *testing.T) {
 	}
 
 	// Nested user object
-	user := result["user"].(map[string]interface{})
+	user := result["user"].(map[string]any)
 	if user["fullName"] == "John Doe" {
 		t.Error("Expected nested fullName to be redacted")
 	}
@@ -326,7 +326,7 @@ func TestRedactionStrategies(t *testing.T) {
 		config := NewDefaultConfig().WithStrategy(StrategyRemove)
 		s := New(config)
 
-		input := map[string]interface{}{
+		input := map[string]any{
 			"email":   "user@example.com",
 			"orderId": "ORD-123",
 		}
@@ -393,10 +393,10 @@ func TestMaxDepth(t *testing.T) {
 	config.MaxDepth = 2
 	s := New(config)
 
-	input := map[string]interface{}{
-		"level1": map[string]interface{}{
-			"level2": map[string]interface{}{
-				"level3": map[string]interface{}{
+	input := map[string]any{
+		"level1": map[string]any{
+			"level2": map[string]any{
+				"level3": map[string]any{
 					"email": "user@example.com",
 				},
 			},
@@ -406,9 +406,9 @@ func TestMaxDepth(t *testing.T) {
 	result := s.SanitizeMap(input)
 
 	// Should stop at level 2, level 3 should not be sanitized
-	level1 := result["level1"].(map[string]interface{})
-	level2 := level1["level2"].(map[string]interface{})
-	level3 := level2["level3"].(map[string]interface{})
+	level1 := result["level1"].(map[string]any)
+	level2 := level1["level2"].(map[string]any)
+	level3 := level2["level3"].(map[string]any)
 
 	// Email at level 3 should not be sanitized due to max depth
 	if level3["email"] != "user@example.com" {
@@ -419,7 +419,7 @@ func TestMaxDepth(t *testing.T) {
 // Helper function
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && s[:len(substr)] == substr ||
-		   len(s) > len(substr) && containsHelper(s, substr)
+		len(s) > len(substr) && containsHelper(s, substr)
 }
 
 func containsHelper(s, substr string) bool {

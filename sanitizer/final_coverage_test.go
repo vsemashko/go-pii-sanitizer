@@ -19,26 +19,26 @@ func TestZapComplexTypes(t *testing.T) {
 	logger := zap.New(core)
 
 	// Test with complex nested structure including all types
-	data := map[string]interface{}{
+	data := map[string]any{
 		"string":  "user@example.com",
 		"int":     42,
 		"int64":   int64(999),
 		"float64": 99.99,
 		"bool":    true,
 		"nil":     nil,
-		"nested": map[string]interface{}{
+		"nested": map[string]any{
 			"email": "nested@example.com",
-			"deep": map[string]interface{}{
+			"deep": map[string]any{
 				"value": 123,
 			},
 		},
-		"array": []interface{}{
+		"array": []any{
 			"text",
 			123,
 			true,
 			nil,
-			map[string]interface{}{"key": "value"},
-			[]interface{}{1, 2, 3}, // Nested array
+			map[string]any{"key": "value"},
+			[]any{1, 2, 3}, // Nested array
 		},
 	}
 
@@ -58,24 +58,24 @@ func TestZerologComplexTypes(t *testing.T) {
 	logger := zerolog.New(&buf)
 
 	// Test with complex nested structure including all types
-	data := map[string]interface{}{
+	data := map[string]any{
 		"string":  "user@example.com",
 		"int":     42,
 		"int64":   int64(999),
 		"float64": 99.99,
 		"bool":    true,
 		"nil":     nil,
-		"nested": map[string]interface{}{
+		"nested": map[string]any{
 			"email": "nested@example.com",
 		},
-		"array": []interface{}{
+		"array": []any{
 			"text",
 			123,
 			int64(456),
 			99.99,
 			true,
 			nil,
-			map[string]interface{}{"key": "value"},
+			map[string]any{"key": "value"},
 		},
 	}
 
@@ -95,15 +95,15 @@ func TestSlogComplexTypes(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(&buf, nil))
 
 	// Test with complex nested structure
-	data := map[string]interface{}{
-		"nested": map[string]interface{}{
-			"deep": map[string]interface{}{
+	data := map[string]any{
+		"nested": map[string]any{
+			"deep": map[string]any{
 				"email": "deep@example.com",
 			},
 		},
-		"array": []interface{}{
-			map[string]interface{}{
-				"items": []interface{}{1, 2, 3},
+		"array": []any{
+			map[string]any{
+				"items": []any{1, 2, 3},
 			},
 		},
 	}
@@ -295,7 +295,7 @@ func TestCompilePatternsAllRegions(t *testing.T) {
 			}
 
 			// Verify sanitizer works
-			result := s.SanitizeMap(map[string]interface{}{
+			result := s.SanitizeMap(map[string]any{
 				"test": "value",
 			})
 
@@ -310,7 +310,7 @@ func TestCompilePatternsAllRegions(t *testing.T) {
 func TestSanitizeMapWithNil(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"nullValue": nil,
 		"email":     "user@example.com",
 		"orderId":   "ORD-123",

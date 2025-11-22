@@ -11,7 +11,7 @@ func TestSlogIntegration(t *testing.T) {
 	s := NewDefault()
 
 	// Test data with PII
-	user := map[string]interface{}{
+	user := map[string]any{
 		"email":    "user@example.com",
 		"fullName": "John Doe",
 		"orderId":  "ORD-123",
@@ -44,7 +44,7 @@ func TestSlogIntegration(t *testing.T) {
 func TestSlogAttr(t *testing.T) {
 	s := NewDefault()
 
-	user := map[string]interface{}{
+	user := map[string]any{
 		"email":   "user@example.com",
 		"orderId": "ORD-123",
 	}
@@ -111,16 +111,16 @@ func TestSlogGroup(t *testing.T) {
 func TestSlogNested(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
-		"user": map[string]interface{}{
+	data := map[string]any{
+		"user": map[string]any{
 			"email":    "user@example.com",
 			"fullName": "John Doe",
-			"address": map[string]interface{}{
+			"address": map[string]any{
 				"street":     "123 Main St",
 				"postalCode": "12345",
 			},
 		},
-		"order": map[string]interface{}{
+		"order": map[string]any{
 			"orderId": "ORD-123",
 			"amount":  99.99,
 		},

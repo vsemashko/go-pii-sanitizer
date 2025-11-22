@@ -8,14 +8,14 @@ import (
 // Implements slog.LogValuer for zero-allocation integration
 type SlogValue struct {
 	sanitizer *Sanitizer
-	data      interface{}
+	data      any
 }
 
 // LogValue implements slog.LogValuer
 // This method is called by slog when the value is logged
 func (v SlogValue) LogValue() slog.Value {
 	switch val := v.data.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		sanitized := v.sanitizer.SanitizeMap(val)
 		return mapToSlogValue(sanitized)
 
@@ -34,7 +34,7 @@ func (v SlogValue) LogValue() slog.Value {
 }
 
 // mapToSlogValue recursively converts a sanitized map to slog.Value
-func mapToSlogValue(m map[string]interface{}) slog.Value {
+func mapToSlogValue(m map[string]any) slog.Value {
 	attrs := make([]slog.Attr, 0, len(m))
 	for k, v := range m {
 		attrs = append(attrs, slog.Any(k, convertToSlogValue(v)))
@@ -42,14 +42,14 @@ func mapToSlogValue(m map[string]interface{}) slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-// convertToSlogValue converts interface{} to appropriate slog value
-func convertToSlogValue(v interface{}) interface{} {
+// convertToSlogValue converts any to appropriate slog value
+func convertToSlogValue(v any) any {
 	switch val := v.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		return mapToSlogValue(val)
-	case []interface{}:
+	case []any:
 		// Convert slice elements
-		result := make([]interface{}, len(val))
+		result := make([]any, len(val))
 		for i, item := range val {
 			result[i] = convertToSlogValue(item)
 		}
@@ -60,12 +60,12 @@ func convertToSlogValue(v interface{}) interface{} {
 }
 
 // SlogAttr creates an slog.Attr with sanitized data
-func (s *Sanitizer) SlogAttr(key string, value interface{}) slog.Attr {
+func (s *Sanitizer) SlogAttr(key string, value any) slog.Attr {
 	return slog.Any(key, SlogValue{sanitizer: s, data: value})
 }
 
 // SlogValue creates a SlogValue for use in slog logging
-func (s *Sanitizer) SlogValue(value interface{}) SlogValue {
+func (s *Sanitizer) SlogValue(value any) SlogValue {
 	return SlogValue{sanitizer: s, data: value}
 }
 
@@ -76,9 +76,9 @@ func (s *Sanitizer) SlogString(key, value string) slog.Attr {
 }
 
 // SlogGroup creates a sanitized group attribute
-func (s *Sanitizer) SlogGroup(name string, args ...interface{}) slog.Attr {
+func (s *Sanitizer) SlogGroup(name string, args ...any) slog.Attr {
 	// Convert args to map
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	for i := 0; i < len(args)-1; i += 2 {
 		if key, ok := args[i].(string); ok {
 			m[key] = args[i+1]

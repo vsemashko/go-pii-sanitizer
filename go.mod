@@ -1,6 +1,6 @@
 module github.com/vsemashko/go-pii-sanitizer
 
-go 1.24.7
+go 1.21
 
 require (
 	github.com/rs/zerolog v1.33.0

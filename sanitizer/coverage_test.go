@@ -76,12 +76,12 @@ func TestSanitizeJSON(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected map[string]interface{}
+		expected map[string]any
 	}{
 		{
 			name:  "Simple JSON with PII",
 			input: `{"email":"user@example.com","orderId":"ORD-123"}`,
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"email":   "[REDACTED]",
 				"orderId": "ORD-123",
 			},
@@ -89,8 +89,8 @@ func TestSanitizeJSON(t *testing.T) {
 		{
 			name:  "Nested JSON",
 			input: `{"user":{"email":"user@example.com","name":"John Doe"},"orderId":"ORD-456"}`,
-			expected: map[string]interface{}{
-				"user": map[string]interface{}{
+			expected: map[string]any{
+				"user": map[string]any{
 					"email": "[REDACTED]",
 					"name":  "[REDACTED]",
 				},
@@ -100,8 +100,8 @@ func TestSanitizeJSON(t *testing.T) {
 		{
 			name:  "JSON with array",
 			input: `{"emails":["user1@example.com","user2@example.com"],"productId":"PROD-123"}`,
-			expected: map[string]interface{}{
-				"emails": []interface{}{
+			expected: map[string]any{
+				"emails": []any{
 					"[REDACTED]",
 					"[REDACTED]",
 				},
@@ -117,7 +117,7 @@ func TestSanitizeJSON(t *testing.T) {
 				t.Fatalf("SanitizeJSON failed: %v", err)
 			}
 
-			var result map[string]interface{}
+			var result map[string]any
 			if err := json.Unmarshal(output, &result); err != nil {
 				t.Fatalf("Failed to unmarshal result: %v", err)
 			}
@@ -197,7 +197,7 @@ func TestSanitizeStruct(t *testing.T) {
 	}
 
 	// Check nested struct
-	if addr, ok := result["address"].(map[string]interface{}); ok {
+	if addr, ok := result["address"].(map[string]any); ok {
 		if addr["street"] == "123 Main St" {
 			t.Error("Expected street to be redacted")
 		}
@@ -217,7 +217,7 @@ func TestSanitizeStruct(t *testing.T) {
 	}
 
 	// Check metadata map with PII
-	if metadata, ok := result["metadata"].(map[string]interface{}); ok {
+	if metadata, ok := result["metadata"].(map[string]any); ok {
 		if metadata["email"] == "another@example.com" {
 			t.Error("Expected nested email in metadata to be redacted")
 		}

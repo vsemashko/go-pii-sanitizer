@@ -70,12 +70,12 @@ func TestLongNestedStructure(t *testing.T) {
 	s := NewDefault()
 
 	// Create deeply nested structure
-	data := map[string]interface{}{
-		"level1": map[string]interface{}{
-			"level2": map[string]interface{}{
-				"level3": map[string]interface{}{
-					"level4": map[string]interface{}{
-						"level5": map[string]interface{}{
+	data := map[string]any{
+		"level1": map[string]any{
+			"level2": map[string]any{
+				"level3": map[string]any{
+					"level4": map[string]any{
+						"level5": map[string]any{
 							"email": "user@example.com",
 						},
 					},
@@ -87,11 +87,11 @@ func TestLongNestedStructure(t *testing.T) {
 	result := s.SanitizeMap(data)
 
 	// Navigate to deepest level
-	l1 := result["level1"].(map[string]interface{})
-	l2 := l1["level2"].(map[string]interface{})
-	l3 := l2["level3"].(map[string]interface{})
-	l4 := l3["level4"].(map[string]interface{})
-	l5 := l4["level5"].(map[string]interface{})
+	l1 := result["level1"].(map[string]any)
+	l2 := l1["level2"].(map[string]any)
+	l3 := l2["level3"].(map[string]any)
+	l4 := l3["level4"].(map[string]any)
+	l5 := l4["level5"].(map[string]any)
 
 	if l5["email"] == "user@example.com" {
 		t.Error("Expected deeply nested email to be redacted")
@@ -101,13 +101,13 @@ func TestLongNestedStructure(t *testing.T) {
 func TestSliceOfMaps(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
-		"users": []interface{}{
-			map[string]interface{}{
+	data := map[string]any{
+		"users": []any{
+			map[string]any{
 				"email": "user1@example.com",
 				"name":  "User One",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"email": "user2@example.com",
 				"name":  "User Two",
 			},
@@ -115,14 +115,14 @@ func TestSliceOfMaps(t *testing.T) {
 	}
 
 	result := s.SanitizeMap(data)
-	users := result["users"].([]interface{})
+	users := result["users"].([]any)
 
-	user1 := users[0].(map[string]interface{})
+	user1 := users[0].(map[string]any)
 	if user1["email"] == "user1@example.com" {
 		t.Error("Expected email in slice to be redacted")
 	}
 
-	user2 := users[1].(map[string]interface{})
+	user2 := users[1].(map[string]any)
 	if user2["email"] == "user2@example.com" {
 		t.Error("Expected email in slice to be redacted")
 	}
@@ -131,8 +131,8 @@ func TestSliceOfMaps(t *testing.T) {
 func TestSliceOfStrings(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
-		"emails": []interface{}{
+	data := map[string]any{
+		"emails": []any{
 			"user1@example.com",
 			"user2@example.com",
 			"not-an-email",
@@ -140,7 +140,7 @@ func TestSliceOfStrings(t *testing.T) {
 	}
 
 	result := s.SanitizeMap(data)
-	emails := result["emails"].([]interface{})
+	emails := result["emails"].([]any)
 
 	// Email patterns in slice content should be detected
 	if emails[0] == "user1@example.com" {
@@ -157,7 +157,7 @@ func TestSliceOfStrings(t *testing.T) {
 func TestMixedTypes(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"string":  "user@example.com",
 		"int":     12345,
 		"float":   99.99,

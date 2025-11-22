@@ -16,39 +16,39 @@ func TestZapMarshalSlice_MixedTypes(t *testing.T) {
 
 	testCases := []struct {
 		name  string
-		slice []interface{}
+		slice []any
 	}{
 		{
 			name:  "Empty slice",
-			slice: []interface{}{},
+			slice: []any{},
 		},
 		{
 			name:  "Slice with nil",
-			slice: []interface{}{nil, "test", nil},
+			slice: []any{nil, "test", nil},
 		},
 		{
 			name: "Slice with maps",
-			slice: []interface{}{
-				map[string]interface{}{"email": "user@example.com"},
-				map[string]interface{}{"phone": "+6591234567"},
+			slice: []any{
+				map[string]any{"email": "user@example.com"},
+				map[string]any{"phone": "+6591234567"},
 			},
 		},
 		{
 			name:  "Slice with primitives",
-			slice: []interface{}{1, 2.5, true, "string"},
+			slice: []any{1, 2.5, true, "string"},
 		},
 		{
 			name: "Slice with nested slices",
-			slice: []interface{}{
-				[]interface{}{"nested1", "nested2"},
-				[]interface{}{"nested3"},
+			slice: []any{
+				[]any{"nested1", "nested2"},
+				[]any{"nested3"},
 			},
 		},
 		{
 			name: "Slice with mixed nested types",
-			slice: []interface{}{
-				map[string]interface{}{"key": "value"},
-				[]interface{}{"item1", "item2"},
+			slice: []any{
+				map[string]any{"key": "value"},
+				[]any{"item1", "item2"},
 				"plain string",
 				42,
 			},
@@ -65,7 +65,7 @@ func TestZapMarshalSlice_MixedTypes(t *testing.T) {
 			logger := zap.New(core)
 
 			// Test by wrapping slice in a map
-			data := map[string]interface{}{
+			data := map[string]any{
 				"items": tc.slice,
 			}
 
@@ -85,20 +85,20 @@ func TestZapMarshalMap_EdgeCases(t *testing.T) {
 
 	testCases := []struct {
 		name string
-		data map[string]interface{}
+		data map[string]any
 	}{
 		{
 			name: "Map with nil values",
-			data: map[string]interface{}{
+			data: map[string]any{
 				"key1": nil,
 				"key2": "value",
 			},
 		},
 		{
 			name: "Map with complex nested structures",
-			data: map[string]interface{}{
-				"level1": map[string]interface{}{
-					"level2": map[string]interface{}{
+			data: map[string]any{
+				"level1": map[string]any{
+					"level2": map[string]any{
 						"level3": "deep value",
 					},
 				},
@@ -106,16 +106,16 @@ func TestZapMarshalMap_EdgeCases(t *testing.T) {
 		},
 		{
 			name: "Map with slices of maps",
-			data: map[string]interface{}{
-				"items": []interface{}{
-					map[string]interface{}{"id": 1},
-					map[string]interface{}{"id": 2},
+			data: map[string]any{
+				"items": []any{
+					map[string]any{"id": 1},
+					map[string]any{"id": 2},
 				},
 			},
 		},
 		{
 			name: "Map with boolean and numeric types",
-			data: map[string]interface{}{
+			data: map[string]any{
 				"active":  true,
 				"count":   42,
 				"balance": 99.99,
@@ -146,7 +146,7 @@ func TestZapAddField_UnsupportedTypes(t *testing.T) {
 	testCases := []struct {
 		name  string
 		key   string
-		value interface{}
+		value any
 	}{
 		{
 			name:  "Channel type",
@@ -173,7 +173,7 @@ func TestZapAddField_UnsupportedTypes(t *testing.T) {
 			core := zapcore.NewCore(enc, writer, zapcore.DebugLevel)
 			logger := zap.New(core)
 
-			data := map[string]interface{}{
+			data := map[string]any{
 				tc.key: tc.value,
 			}
 
@@ -193,7 +193,7 @@ func TestZerologAddField_EdgeCases(t *testing.T) {
 	testCases := []struct {
 		name  string
 		key   string
-		value interface{}
+		value any
 	}{
 		{
 			name:  "Nil value",
@@ -203,25 +203,25 @@ func TestZerologAddField_EdgeCases(t *testing.T) {
 		{
 			name:  "Empty slice",
 			key:   "empty_slice",
-			value: []interface{}{},
+			value: []any{},
 		},
 		{
 			name:  "Empty map",
 			key:   "empty_map",
-			value: map[string]interface{}{},
+			value: map[string]any{},
 		},
 		{
-			name:  "Nested empty structures",
-			key:   "nested_empty",
-			value: map[string]interface{}{
-				"empty_slice": []interface{}{},
-				"empty_map":   map[string]interface{}{},
+			name: "Nested empty structures",
+			key:  "nested_empty",
+			value: map[string]any{
+				"empty_slice": []any{},
+				"empty_map":   map[string]any{},
 			},
 		},
 		{
 			name:  "Slice with channel (unsupported)",
 			key:   "slice_with_channel",
-			value: []interface{}{make(chan int)},
+			value: []any{make(chan int)},
 		},
 	}
 
@@ -230,7 +230,7 @@ func TestZerologAddField_EdgeCases(t *testing.T) {
 			buf := &bytes.Buffer{}
 			logger := zerolog.New(buf)
 
-			data := map[string]interface{}{
+			data := map[string]any{
 				tc.key: tc.value,
 			}
 
@@ -250,13 +250,13 @@ func TestZerologArray_NestedSlices(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := zerolog.New(buf)
 
-	testData := map[string]interface{}{
-		"items": []interface{}{
-			[]interface{}{
-				[]interface{}{"deep", "nesting"},
+	testData := map[string]any{
+		"items": []any{
+			[]any{
+				[]any{"deep", "nesting"},
 			},
-			map[string]interface{}{
-				"nested": []interface{}{"item1", "item2"},
+			map[string]any{
+				"nested": []any{"item1", "item2"},
 			},
 		},
 	}
@@ -274,14 +274,14 @@ func TestZerologDict_ComplexNesting(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := zerolog.New(buf)
 
-	testData := map[string]interface{}{
-		"user": map[string]interface{}{
+	testData := map[string]any{
+		"user": map[string]any{
 			"email": "user@example.com",
-			"profile": map[string]interface{}{
+			"profile": map[string]any{
 				"name": "John Doe",
-				"contacts": []interface{}{
-					map[string]interface{}{"type": "email", "value": "john@example.com"},
-					map[string]interface{}{"type": "phone", "value": "+6591234567"},
+				"contacts": []any{
+					map[string]any{"type": "email", "value": "john@example.com"},
+					map[string]any{"type": "phone", "value": "+6591234567"},
 				},
 			},
 		},
@@ -306,7 +306,7 @@ func TestSlogAttr_WithComplexTypes(t *testing.T) {
 	testCases := []struct {
 		name  string
 		key   string
-		value interface{}
+		value any
 	}{
 		{
 			name:  "Nil value",
@@ -316,9 +316,9 @@ func TestSlogAttr_WithComplexTypes(t *testing.T) {
 		{
 			name: "Deeply nested map",
 			key:  "deep",
-			value: map[string]interface{}{
-				"l1": map[string]interface{}{
-					"l2": map[string]interface{}{
+			value: map[string]any{
+				"l1": map[string]any{
+					"l2": map[string]any{
 						"l3": "value",
 					},
 				},
@@ -327,11 +327,11 @@ func TestSlogAttr_WithComplexTypes(t *testing.T) {
 		{
 			name: "Mixed slice",
 			key:  "mixed",
-			value: []interface{}{
+			value: []any{
 				1,
 				"string",
-				map[string]interface{}{"key": "value"},
-				[]interface{}{"nested"},
+				map[string]any{"key": "value"},
+				[]any{"nested"},
 			},
 		},
 		{
@@ -355,12 +355,12 @@ func TestSlogAttr_WithComplexTypes(t *testing.T) {
 func TestZapObject_WithPIIInNestedStructures(t *testing.T) {
 	s := NewDefault()
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"public": "safe data",
-		"user": map[string]interface{}{
+		"user": map[string]any{
 			"email": "user@example.com",
-			"orders": []interface{}{
-				map[string]interface{}{
+			"orders": []any{
+				map[string]any{
 					"orderId":     "ORD-123",
 					"description": "Payment for John Doe", // Name in description
 				},
